@@ -140,8 +140,16 @@ void main() {
     await capture(tester, 'register-address');
     await tapText(tester, 'Create account');
     expect(submitted, isNull);
-    await tapText(tester, 'I accept the account terms');
-    await tapText(tester, 'I have read the privacy notice');
+    await tapText(tester, 'Account terms');
+    expect(find.text('Development terms'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    await tapText(tester, 'Privacy notice');
+    expect(find.text('Development privacy'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('terms_privacy_checkbox')));
+    await tester.pumpAndSettle();
     await tapText(tester, 'Create account');
     expect(submitted!['termsVersion'], 'terms-1');
     expect(submitted!['privacyVersion'], 'privacy-1');

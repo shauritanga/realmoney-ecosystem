@@ -216,64 +216,132 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     body: SafeArea(child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 560),
       child: _loading ? const Center(child: CircularProgressIndicator()) : _legal == null
         ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text(_error ?? 'Unable to load terms'), TextButton(onPressed: _loadLegal, child: const Text('Retry'))])
-        : SingleChildScrollView(controller: _scroll, padding: const EdgeInsets.all(24), child: Form(key: _form, child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Step ${_existing && _step > 2 ? _step : _step + 1} of ${_existing ? 4 : 5}', style: const TextStyle(color: AppColors.textMuted)),
-            const SizedBox(height: 8),
-            Text(['Your mobile number', 'Check your messages', 'Create a password', 'Personal details', 'Residential address'][_step], style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(value: (_existing && _step > 2 ? _step : _step + 1) / (_existing ? 4 : 5), backgroundColor: AppColors.border),
-            const SizedBox(height: 24),
-            if (_legal!['draft'] == true) const Padding(padding: EdgeInsets.only(bottom: 20), child: Text('Development test only. Terms are drafts; use synthetic information.', style: TextStyle(color: AppColors.warning))),
-            if (_step == 0) ...[
-              const Text('We’ll send a 6-digit code to confirm this number belongs to you.', style: TextStyle(color: AppColors.textMuted, height: 1.5)),
-              const SizedBox(height: 24),
-              _input('phone', 'Mobile number', keyboard: TextInputType.phone),
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scroll,
+                  padding: const EdgeInsets.all(24),
+                  child: Form(
+                    key: _form,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text('Step ${_existing && _step > 2 ? _step : _step + 1} of ${_existing ? 4 : 5}', style: const TextStyle(color: AppColors.textMuted)),
+                        const SizedBox(height: 8),
+                        Text(['Your mobile number', 'Check your messages', 'Create a password', 'Personal details', 'Residential address'][_step], style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        LinearProgressIndicator(value: (_existing && _step > 2 ? _step : _step + 1) / (_existing ? 4 : 5), backgroundColor: AppColors.border),
+                        const SizedBox(height: 24),
+                        if (_legal!['draft'] == true) const Padding(padding: EdgeInsets.only(bottom: 20), child: Text('Development test only. Terms are drafts; use synthetic information.', style: TextStyle(color: AppColors.warning))),
+                        if (_step == 0) ...[
+                          const Text('We’ll send a 6-digit code to confirm this number belongs to you.', style: TextStyle(color: AppColors.textMuted, height: 1.5)),
+                          const SizedBox(height: 24),
+                          _input('phone', 'Mobile number', keyboard: TextInputType.phone),
+                        ],
+                        if (_step == 1) ...[
+                          Text('Enter the 6-digit code sent to ${field('phone').text.trim()}.', style: const TextStyle(color: AppColors.textMuted, height: 1.5)),
+                          Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: _busy ? null : () => _goTo(0), child: Text(_existing ? 'Back to mobile number' : 'Change number'))),
+                          const SizedBox(height: 16),
+                          _input('code', '6-digit SMS code', keyboard: TextInputType.number),
+                          const Padding(padding: EdgeInsets.only(bottom: 16), child: Text(
+                            'Use the code suggested by your phone, or allow it to fill from your verification SMS. You can also enter it manually.',
+                            style: TextStyle(color: AppColors.textMuted, height: 1.5))),
+                          if (_developmentCode != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: Text('Development code: $_developmentCode (no SMS sent)', style: const TextStyle(color: AppColors.warning))),
+                          TextButton(onPressed: _busy || _resendSeconds > 0 ? null : _sendCode,
+                            child: Text(_resendSeconds > 0 ? 'Resend in $_resendSeconds seconds' : 'Resend code')),
+                        ],
+                        if (_step == 2) ...[
+                          const Text('Your number is verified. Choose a password with at least 10 characters.', style: TextStyle(color: AppColors.textMuted, height: 1.5)),
+                          const SizedBox(height: 24),
+                          _input('password', 'Password', secret: true),
+                          _input('confirmPassword', 'Confirm password', secret: true),
+                        ],
+                        if (_step == 3) ...[
+                          _input('fullName', 'Full legal name'),
+                          _input('dateOfBirth', 'Date of birth (YYYY-MM-DD)', keyboard: TextInputType.datetime),
+                          DropdownButtonFormField<String>(initialValue: _identityType, decoration: const InputDecoration(labelText: 'Identity document'),
+                            items: const [DropdownMenuItem(value: 'NIDA', child: Text('NIDA / NIN')), DropdownMenuItem(value: 'PASSPORT', child: Text('Passport'))],
+                            onChanged: _busy ? null : (value) => setState(() => _identityType = value!)),
+                          const SizedBox(height: 18),
+                          _input('nationalId', 'Identity document number'),
+                          _input('email', 'Email (optional)', optional: true, keyboard: TextInputType.emailAddress),
+                          const Text('We will verify these details before you can apply for a loan.'),
+                        ],
+                        if (_step == 4) ...[
+                          _input('region', 'Region'), _input('district', 'District'), _input('ward', 'Ward'), _input('street', 'Street / village'),
+                          _input('landmark', 'House number / landmark (optional)', optional: true),
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: _busy ? null : () => setState(() {
+                              final next = !(_terms && _privacy);
+                              _terms = next;
+                              _privacy = next;
+                            }),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Wrap(
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      children: [
+                                        const Text('I accept the '),
+                                        GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
+                                          onTap: () => _readDocument('terms'),
+                                          child: const Text('Account terms',
+                                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, decoration: TextDecoration.underline)),
+                                        ),
+                                        const Text(' and '),
+                                        GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
+                                          onTap: () => _readDocument('privacy'),
+                                          child: const Text('Privacy notice',
+                                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, decoration: TextDecoration.underline)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Checkbox(
+                                    key: const ValueKey('terms_privacy_checkbox'),
+                                    value: _terms && _privacy,
+                                    onChanged: _busy ? null : (v) => setState(() {
+                                      _terms = v ?? false;
+                                      _privacy = v ?? false;
+                                    }),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_error!, style: const TextStyle(color: AppColors.error))),
+                    FilledButton(
+                      onPressed: _busy || (_step == 0 && !_hasSentCode && _resendSeconds > 0) ? null : _step == 0 ? _continuePhone : _step == 1 ? _verifyCode : _next,
+                      child: Text(_busy ? 'Please wait…' : _step == 0 ? (_hasSentCode ? 'Continue' : _resendSeconds > 0 ? 'Send again in $_resendSeconds seconds' : 'Send verification code') : _step == 1 ? 'Verify code' : _step == 4 ? (_existing ? 'Save registration' : 'Create account') : 'Continue'),
+                    ),
+                  ],
+                ),
+              ),
             ],
-            if (_step == 1) ...[
-              Text('Enter the 6-digit code sent to ${field('phone').text.trim()}.', style: const TextStyle(color: AppColors.textMuted, height: 1.5)),
-              Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: _busy ? null : () => _goTo(0), child: Text(_existing ? 'Back to mobile number' : 'Change number'))),
-              const SizedBox(height: 16),
-              _input('code', '6-digit SMS code', keyboard: TextInputType.number),
-              const Padding(padding: EdgeInsets.only(bottom: 16), child: Text(
-                'Use the code suggested by your phone, or allow it to fill from your verification SMS. You can also enter it manually.',
-                style: TextStyle(color: AppColors.textMuted, height: 1.5))),
-              if (_developmentCode != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: Text('Development code: $_developmentCode (no SMS sent)', style: const TextStyle(color: AppColors.warning))),
-              TextButton(onPressed: _busy || _resendSeconds > 0 ? null : _sendCode,
-                child: Text(_resendSeconds > 0 ? 'Resend in $_resendSeconds seconds' : 'Resend code')),
-            ],
-            if (_step == 2) ...[
-              const Text('Your number is verified. Choose a password with at least 10 characters.', style: TextStyle(color: AppColors.textMuted, height: 1.5)),
-              const SizedBox(height: 24),
-              _input('password', 'Password', secret: true),
-              _input('confirmPassword', 'Confirm password', secret: true),
-            ],
-            if (_step == 3) ...[
-              _input('fullName', 'Full legal name'),
-              _input('dateOfBirth', 'Date of birth (YYYY-MM-DD)', keyboard: TextInputType.datetime),
-              DropdownButtonFormField<String>(initialValue: _identityType, decoration: const InputDecoration(labelText: 'Identity document'),
-                items: const [DropdownMenuItem(value: 'NIDA', child: Text('NIDA / NIN')), DropdownMenuItem(value: 'PASSPORT', child: Text('Passport'))],
-                onChanged: _busy ? null : (value) => setState(() => _identityType = value!)),
-              const SizedBox(height: 18),
-              _input('nationalId', 'Identity document number'),
-              _input('email', 'Email (optional)', optional: true, keyboard: TextInputType.emailAddress),
-              const Text('We will verify these details before you can apply for a loan.'),
-            ],
-            if (_step == 4) ...[
-              _input('region', 'Region'), _input('district', 'District'), _input('ward', 'Ward'), _input('street', 'Street / village'),
-              _input('landmark', 'House number / landmark (optional)', optional: true),
-              TextButton(onPressed: () => _readDocument('terms'), child: const Text('Read account terms')),
-              CheckboxListTile(contentPadding: EdgeInsets.zero, value: _terms, onChanged: _busy ? null : (v) => setState(() => _terms = v!), title: const Text('I accept the account terms')),
-              TextButton(onPressed: () => _readDocument('privacy'), child: const Text('Read privacy notice')),
-              CheckboxListTile(contentPadding: EdgeInsets.zero, value: _privacy, onChanged: _busy ? null : (v) => setState(() => _privacy = v!), title: const Text('I have read the privacy notice')),
-              CheckboxListTile(contentPadding: EdgeInsets.zero, value: _marketing, onChanged: _busy ? null : (v) => setState(() => _marketing = v!), title: const Text('Send me offers (optional)')),
-            ],
-            if (_error != null) Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text(_error!, style: const TextStyle(color: AppColors.error))),
-            const SizedBox(height: 24),
-            FilledButton(onPressed: _busy || (_step == 0 && !_hasSentCode && _resendSeconds > 0) ? null : _step == 0 ? _continuePhone : _step == 1 ? _verifyCode : _next, child: Text(_busy ? 'Please wait…' : _step == 0 ? (_hasSentCode ? 'Continue' : _resendSeconds > 0 ? 'Send again in $_resendSeconds seconds' : 'Send verification code') : _step == 1 ? 'Verify code' : _step == 4 ? (_existing ? 'Save registration' : 'Create account') : 'Continue')),
-            
-          ],
-        ))),
+          ),
     ))),
   ));
 }
