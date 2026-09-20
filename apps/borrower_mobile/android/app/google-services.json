@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "117365600577",
+    "project_id": "realmoney-9b2cf",
+    "storage_bucket": "realmoney-9b2cf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:117365600577:android:78696386043949a65231c0",
+        "android_client_info": {
+          "package_name": "tz.realmoney.borrower.borrower_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0eKDAsESaXykV2-ITK59wHuqcbWwD4K4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
