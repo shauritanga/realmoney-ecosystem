@@ -667,19 +667,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// Tala-style pipeline explainer: PENDING/APPROVED is not yet payable.
   Widget _buildPipelineCard(dynamic loan) {
     final isApproved = loan['status'] == 'APPROVED';
+    final accentColor = isApproved ? AppColors.primary : AppColors.warning;
+    final statusIcon = isApproved
+        ? HugeIcons.strokeRoundedCheckmarkBadge01
+        : HugeIcons.strokeRoundedHourglass;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.5)),
+        border: Border.all(color: accentColor.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const HugeIcon(icon: HugeIcons.strokeRoundedHourglass, color: AppColors.warning, size: 22),
+              HugeIcon(icon: statusIcon, color: accentColor, size: 22),
               const SizedBox(width: 8),
               Text(
                 isApproved ? 'Loan approved — payout soon' : 'Application under review',
