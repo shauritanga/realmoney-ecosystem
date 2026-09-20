@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CollectionsService } from './collections.service.js';
 import { CollectionsController } from './collections.controller.js';
-import { SelcomModule } from '../selcom/selcom.module.js';
+import { ClickPesaModule } from '../clickpesa/clickpesa.module.js';
 import { CollectorAssignment } from '../database/entities/collector-assignment.entity.js';
 import { Loan } from '../database/entities/loan.entity.js';
 import { InteractionLog } from '../database/entities/interaction-log.entity.js';
@@ -12,7 +12,7 @@ import { Repayment } from '../database/entities/repayment.entity.js';
 @Module({
   imports: [
     TypeOrmModule.forFeature([CollectorAssignment, Loan, InteractionLog, PromiseToPay, Repayment]),
-    SelcomModule,
+    ClickPesaModule,
   ],
   controllers: [CollectionsController],
   providers: [CollectionsService],

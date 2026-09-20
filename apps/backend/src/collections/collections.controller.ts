@@ -61,7 +61,7 @@ export class CollectionsController {
   }
 
   /**
-   * Trigger Selcom USSD push prompt directly to borrower
+   * Trigger ClickPesa USSD push prompt directly to borrower
    */
   @Post('trigger-payment')
   @Roles(UserRole.COLLECTOR, UserRole.ADMIN, UserRole.BORROWER)
@@ -69,7 +69,7 @@ export class CollectionsController {
     @Request() req: any,
     @Body() body: { loanId: string; amount: number },
   ) {
-    return this.collectionsService.triggerUssdPushPayment(req.user.id, body);
+    return this.collectionsService.triggerUssdPushPayment(req.user, body);
   }
 
   /**

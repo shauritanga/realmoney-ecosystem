@@ -81,7 +81,7 @@ class _UssdPromptDialogState extends State<UssdPromptDialog> {
           Icon(Icons.bolt, color: Color(0xFFF59E0B), size: 24),
           SizedBox(width: 8),
           Text(
-            'Push Selcom USSD',
+            'Push ClickPesa USSD',
             style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ],

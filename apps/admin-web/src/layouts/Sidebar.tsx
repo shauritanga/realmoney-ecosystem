@@ -59,14 +59,11 @@ export function Sidebar({
       >
         {/* Brand Header */}
         <div className={`flex items-center gap-3 ${desktopOpen ? 'px-2' : 'justify-center px-0'}`}>
-          <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 font-display font-bold tracking-[-0.1em] text-black shadow-sm">
-            RM
-          </div>
+          <img src="/logo.png" alt="RealMoney" className="size-9 shrink-0 object-contain" />
           {desktopOpen && (
             <div className="min-w-0 flex-1">
-              <strong className="block truncate font-display text-sm text-zinc-900 dark:text-white">
-                RealMoney
-              </strong>
+              <img src="/logo_text.png" alt="RealMoney" className="h-[18px] object-contain dark:hidden" />
+              <img src="/logo_text_light.png" alt="RealMoney" className="hidden h-[18px] object-contain dark:block" />
               <span className="block truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                 Admin console
               </span>

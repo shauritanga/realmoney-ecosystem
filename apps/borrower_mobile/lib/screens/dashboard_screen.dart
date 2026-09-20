@@ -116,9 +116,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!mounted) return;
     Navigator.pop(context); // Close loading
 
-    final success = res['success'] == true;
     final orderId = res['orderId']?.toString();
-    if (success && orderId != null) {
+    if (orderId != null) {
       _showPinPromptDialog(orderId, amount);
     } else {
       _showResultDialog(
@@ -130,7 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// M-KOPA-style: the USSD prompt is on the borrower's phone — this dialog
-  /// waits for the PIN step and (demo only) lets them simulate completing it.
+  /// lets the borrower check the verified payment status after authorizing.
   void _showPinPromptDialog(String orderId, double amount) {
     showDialog(
       context: context,
@@ -155,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'A Selcom prompt for TZS ${currencyFormat.format(amount)} was sent. Enter your mobile-money PIN to complete payment.',
+                  'If a ClickPesa prompt appears on your phone, authorize it there with your mobile-money PIN. Then check the payment status below.',
                   style:
                       const TextStyle(color: AppColors.textMuted, fontSize: 13),
                 ),
@@ -184,14 +183,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     : () async {
                         final dialogNavigator = Navigator.of(ctx);
                         setDialogState(() => simulating = true);
-                        final sim = await ApiService.simulatePinEntry(
-                            orderId: orderId, amount: amount);
+                        final sim = await ApiService.checkPaymentStatus(
+                            orderId: orderId);
                         if (!mounted) return;
                         dialogNavigator.pop();
-                        final ok = sim['received'] == true;
+                        final ok = sim['status'] == 'COMPLETED';
                         _showResultDialog(
                           success: ok,
-                          title: ok ? 'Payment received' : 'Simulation failed',
+                          title: ok ? 'Payment received' : 'Payment status',
                           message: sim['message']?.toString() ??
                               'Repayment status updated.',
                         );
@@ -210,7 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: AppColors.onPrimary),
                       )
-                    : const Text('I’ve entered my PIN (demo)',
+                    : const Text('Check payment status',
                         style: TextStyle(
                             color: AppColors.onPrimary,
                             fontWeight: FontWeight.bold,
@@ -265,7 +264,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     onPopInvokedWithResult: (didPop, result) { if (!didPop) setState(() => _tab = 0); },
     child: Scaffold(
       appBar: AppBar(
-        title: Text(['RealMoney', 'My loans', 'Payments', 'Account'][_tab]),
+        title: _tab == 0
+            ? Image.asset(
+                'assets/images/logo_horizontal.png',
+                height: 30,
+                semanticLabel: 'RealMoney',
+              )
+            : Text(['RealMoney', 'My loans', 'Payments', 'Account'][_tab]),
         actions: [if (_tab != 3) IconButton(tooltip: 'Refresh', onPressed: _isLoading ? null : _loadLoans, icon: const Icon(Icons.refresh))],
       ),
       bottomNavigationBar: NavigationBar(
@@ -380,7 +385,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _detail('Loan', '${payment['loanNumber']}'),
     _detail(payment['status'] == 'COMPLETED' ? 'Paid on' : 'Requested on', _date(payment['paidAt'] ?? payment['createdAt'])),
     _detail('Payment method', _status(payment['channel'])),
-    _detail('Transaction reference', '${payment['selcomTransId'] ?? payment['selcomReference'] ?? payment['id']}'),
+    _detail('Transaction reference', '${payment['providerTransId'] ?? payment['providerReference'] ?? payment['selcomTransId'] ?? payment['selcomReference'] ?? payment['id']}'),
     if (payment['status'] != 'COMPLETED') const Text('This is not a receipt. The payment has not been confirmed.', style: TextStyle(color: AppColors.warning)),
   ]);
 
@@ -555,7 +560,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Icon(Icons.bolt, color: AppColors.onPrimary, size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'Repay via Selcom USSD',
+                  'Repay via ClickPesa USSD',
                   style: TextStyle(color: AppColors.onPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                 ),
               ],

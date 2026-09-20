@@ -104,6 +104,22 @@ class _AccountTabState extends State<AccountTab> {
       const Divider(),
       ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.logout, color: AppColors.error),
         title: const Text('Sign out', style: TextStyle(color: AppColors.error)), onTap: _signOut),
+      const SizedBox(height: 24),
+      Center(
+        child: Column(
+          children: [
+            Image.asset('assets/images/logo.png', height: 40),
+            const SizedBox(height: 8),
+            Image.asset('assets/images/logo_text.png', height: 18),
+            const SizedBox(height: 4),
+            const Text(
+              'RealMoney Microfinance Tanzania · v1.0.0',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
     ],
   ));
 }

@@ -144,24 +144,19 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  /// Demo helper: simulates the borrower entering their mobile-money PIN,
-  /// completing a previously triggered USSD push (backend simulate-callback).
-  static Future<Map<String, dynamic>> simulatePinEntry({
+  static Future<Map<String, dynamic>> checkPaymentStatus({
     required String orderId,
-    required double amount,
-    bool success = true,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/selcom/simulate-callback'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'orderId': orderId,
-        'amount': amount,
-        'success': success,
-      }),
-    );
-
-    return jsonDecode(response.body);
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/clickpesa/payments/${Uri.encodeComponent(orderId)}'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 35));
+      return jsonDecode(response.body);
+    } catch (_) {
+      return {'status': 'PENDING', 'message': 'Unable to check payment status. Please try again.'};
+    }
   }
 
   static Future<Map<String, dynamic>> triggerSelfRepayment({

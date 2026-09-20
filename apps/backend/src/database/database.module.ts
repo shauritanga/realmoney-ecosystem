@@ -1,3 +1,4 @@
+import { PaymentWebhookEvent } from './entities/payment-webhook-event.entity.js';
 import { PhoneChallenge, OnboardingRateLimit } from './entities/phone-challenge.entity.js';
 import { LendingSettings } from './entities/lending-settings.entity.js';
 import { Module } from '@nestjs/common';
@@ -14,6 +15,7 @@ import { PromiseToPay } from './entities/promise-to-pay.entity.js';
 import { DeviceToken } from '../notifications/device-token.entity.js';
 
 export const APP_ENTITIES = [
+  PaymentWebhookEvent,
   PhoneChallenge, OnboardingRateLimit,
   LendingSettings,
   User,

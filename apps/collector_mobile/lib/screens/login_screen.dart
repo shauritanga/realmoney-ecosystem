@@ -55,34 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 // Logo & Header
                 Center(
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF10B981), Color(0xFF14B8A6)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'RM',
-                        style: TextStyle(
-                          color: Color(0xFF022C22),
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    height: 76,
+                    semanticLabel: 'RealMoney Logo',
                   ),
                 ),
                 const SizedBox(height: 24),

@@ -71,13 +71,12 @@ export function LoginPage() {
       <div className="w-full max-w-[360px]">
         {/* Brand Header */}
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 grid size-11 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 font-display text-base font-bold text-black shadow-sm">
-            RM
+          <img src="/logo.png" alt="RealMoney" className="mx-auto mb-3 size-14 object-contain" />
+          <div className="flex justify-center">
+            <img src="/logo_text.png" alt="RealMoney" className="h-7 object-contain dark:hidden" />
+            <img src="/logo_text_light.png" alt="RealMoney" className="hidden h-7 object-contain dark:block" />
           </div>
-          <h1 className="font-display text-xl font-semibold tracking-[-0.03em] text-zinc-900 dark:text-white">
-            RealMoney
-          </h1>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
             Sign in to your account
           </p>
         </div>

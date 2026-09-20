@@ -1,13 +1,14 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan } from 'typeorm';
-import { SelcomService } from '../selcom/selcom.service.js';
+import { ClickPesaService, type PaymentActor } from '../clickpesa/clickpesa.service.js';
 import {
   CommunicationChannel,
   DispositionCode,
   PtpStatus,
   LoanStatus,
   RepaymentStatus,
+  UserRole,
 } from '../database/enums.js';
 import { CollectorAssignment } from '../database/entities/collector-assignment.entity.js';
 import { Loan } from '../database/entities/loan.entity.js';
@@ -39,7 +40,7 @@ export class CollectionsService {
     private readonly ptps: Repository<PromiseToPay>,
     @InjectRepository(Repayment)
     private readonly repayments: Repository<Repayment>,
-    private readonly selcomService: SelcomService,
+    private readonly clickPesaService: ClickPesaService,
   ) {}
 
   /**
@@ -235,48 +236,18 @@ export class CollectionsService {
     };
   }
 
-  /**
-   * Collector triggers instant Selcom USSD Push prompt to borrower
-   */
-  async triggerUssdPushPayment(
-    collectorId: string,
-    dto: { loanId: string; amount: number },
-  ) {
-    const loan = await this.loans.findOne({
-      where: { id: dto.loanId },
-      relations: { borrower: true },
-    });
-
-    if (!loan) {
-      throw new NotFoundException('Loan not found');
-    }
-
-    if (dto.amount <= 0 || dto.amount > Number(loan.outstandingBalance)) {
-      throw new BadRequestException(
-        `Amount must be between 1 and outstanding balance of TZS ${loan.outstandingBalance}`,
-      );
-    }
-
-    // Call Selcom Service
-    const pushResult = await this.selcomService.triggerUssdPush({
-      loanId: loan.id,
-      phone: loan.borrower.phone,
-      amount: dto.amount,
-      initiatedById: collectorId,
-    });
-
-    // Log this action
-    await this.interactions.save(
-      this.interactions.create({
-        loanId: loan.id,
-        collectorId,
+  async triggerUssdPushPayment(actor: PaymentActor, dto: { loanId: string; amount: number }) {
+    const result = await this.clickPesaService.triggerUssdPush(dto, actor);
+    if (actor.role === UserRole.COLLECTOR && result.success) {
+      await this.interactions.save(this.interactions.create({
+        loanId: dto.loanId,
+        collectorId: actor.id,
         channel: CommunicationChannel.SMS,
         disposition: DispositionCode.PROMISED_TO_PAY,
-        notes: `USSD Push prompt of TZS ${dto.amount} triggered. Order ID: ${pushResult.orderId}`,
-      }),
-    );
-
-    return pushResult;
+        notes: `ClickPesa payment requested. Order ID: ${result.orderId}. ${result.message}`,
+      }));
+    }
+    return result;
   }
 
   /** Levels across a collector's currently worked (queueable) assignments. */

@@ -30,6 +30,7 @@ export enum AgingBucket {
 }
 
 export enum RepaymentChannel {
+  CLICKPESA_USSD_PUSH = 'CLICKPESA_USSD_PUSH',
   SELCOM_USSD_PUSH = 'SELCOM_USSD_PUSH',
   SELCOM_PAYBILL = 'SELCOM_PAYBILL',
   CASH = 'CASH',
@@ -65,6 +66,7 @@ export enum PtpStatus {
 }
 
 export enum AccountType {
+  CASH_CLICKPESA = 'CASH_CLICKPESA',
   LOAN_RECEIVABLE = 'LOAN_RECEIVABLE',
   CASH_SELCOM = 'CASH_SELCOM',
   INTEREST_INCOME = 'INTEREST_INCOME',

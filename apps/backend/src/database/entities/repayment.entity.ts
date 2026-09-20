@@ -37,6 +37,12 @@ export class Repayment {
   @Column({ type: 'varchar', nullable: true })
   selcomReference: string | null;
 
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  providerReference: string | null;
+
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  providerTransId: string | null;
+
   @Column({ type: 'enum', enum: RepaymentStatus, default: RepaymentStatus.PENDING })
   status: RepaymentStatus;
 

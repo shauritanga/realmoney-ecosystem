@@ -41,9 +41,28 @@ class _LoginScreenState extends State<LoginScreen> {
       padding: const EdgeInsets.all(24),
       child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 440),
         child: Form(key: _form, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const Text('RealMoney', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+          Center(
+            child: Image.asset(
+              'assets/images/logo.png',
+              height: 72,
+              semanticLabel: 'RealMoney Logo',
+            ),
+          ),
+          const SizedBox(height: 14),
+          Center(
+            child: Image.asset(
+              'assets/images/logo_text.png',
+              height: 32,
+              semanticLabel: 'RealMoney',
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text('Sign in to manage your loans.'),
+          const Center(
+            child: Text(
+              'Sign in to manage your loans.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+            ),
+          ),
           const SizedBox(height: 32),
           TextFormField(controller: _phone, keyboardType: TextInputType.phone,
             decoration: const InputDecoration(labelText: 'Mobile number', hintText: '+255712345678'),

@@ -220,7 +220,7 @@ class _DispositionDialogState extends State<DispositionDialog> {
               maxLines: 2,
               style: const TextStyle(color: Colors.white, fontSize: 13),
               decoration: InputDecoration(
-                hintText: 'Customer agreed to pay via Selcom...',
+                hintText: 'Customer agreed to pay via ClickPesa...',
                 hintStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13),
                 filled: true,
                 fillColor: const Color(0xFF0F172A),
