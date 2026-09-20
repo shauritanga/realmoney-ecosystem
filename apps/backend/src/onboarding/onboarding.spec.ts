@@ -165,6 +165,16 @@ describe('provider adapters', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('https://apisms.beem.africa/v1/send');
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).recipients[0].dest_addr).toBe('255712345678');
   });
+  it('sends Africa\'s Talking SMS when selected and treats accepted recipients as live delivery', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ SMSMessageData: { Recipients: [{ statusCode: 101, messageId: 'ATXid_test' }] } }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new VerificationProvider(new ConfigService({ SMS_PROVIDER: 'africas_talking', AFRICASTALKING_USERNAME: 'shauritanga', AFRICASTALKING_API_KEY: 'key' }));
+    expect((await provider.request('sms', { phone: valid.phone, message: 'test code' })).reference).toBe('ATXid_test');
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.africastalking.com/version1/messaging');
+    expect(fetchMock.mock.calls[0][1].headers.apiKey).toBe('key');
+    expect(fetchMock.mock.calls[0][1].body).toContain('username=shauritanga');
+    expect(fetchMock.mock.calls[0][1].body).toContain('to=%2B255712345678');
+  });
   it('rejects failed or mismatched Selcom lookups and accepts matching legal names', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ result: 'SUCCESS', reference: 'ref', data: [{ name: 'TEST BORROWER' }] }) });
     vi.stubGlobal('fetch', fetchMock);

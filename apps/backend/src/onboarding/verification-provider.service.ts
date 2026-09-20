@@ -13,7 +13,11 @@ export class VerificationProvider {
 
   async request(kind: 'sms' | 'identity' | 'wallet', payload: Record<string, unknown>) {
     if (this.development) return { verified: true, reference: `development-${kind}`, mode: 'development' as const };
-    if (kind === 'sms') return this.sendBeemSms(payload);
+    if (kind === 'sms') {
+      return this.config.get<string>('SMS_PROVIDER', 'beem').toLowerCase() === 'africas_talking'
+        ? this.sendAfricasTalkingSms(payload)
+        : this.sendBeemSms(payload);
+    }
     if (kind === 'wallet') return this.verifySelcomWallet(payload);
     const base = this.config.get<string>('VERIFICATION_BRIDGE_URL');
     const key = this.config.get<string>('VERIFICATION_BRIDGE_TOKEN');
@@ -52,6 +56,35 @@ export class VerificationProvider {
       const data = await response.json();
       if (!response.ok || data.successful !== true) throw new Error('SMS not accepted');
       return { verified: true, reference: String(data.request_id ?? ''), mode: 'live' as const };
+    } catch { throw new ServiceUnavailableException('SMS could not be sent. Please retry.'); }
+  }
+
+  private async sendAfricasTalkingSms(payload: Record<string, unknown>) {
+    const username = this.config.get<string>('AFRICASTALKING_USERNAME');
+    const apiKey = this.config.get<string>('AFRICASTALKING_API_KEY');
+    const base = this.config.get<string>('AFRICASTALKING_BASE_URL', 'https://api.africastalking.com');
+    if (!username || !apiKey || !base.startsWith('https://')) {
+      throw new ServiceUnavailableException('Africa\'s Talking SMS is not configured');
+    }
+    try {
+      const params = new URLSearchParams({
+        username,
+        to: String(payload.phone),
+        message: String(payload.message),
+      });
+      const sender = this.config.get<string>('AFRICASTALKING_SENDER_ID');
+      if (sender) params.set('from', sender);
+      const response = await fetch(`${base.replace(/\/$/, '')}/version1/messaging`, {
+        method: 'POST', redirect: 'error', signal: AbortSignal.timeout(10000),
+        headers: { apiKey, Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
+      const data = await response.json();
+      const recipients = data?.SMSMessageData?.Recipients;
+      const accepted = response.ok && Array.isArray(recipients) && recipients.length > 0 &&
+        recipients.every((recipient: any) => ['101', 101].includes(recipient.statusCode) || recipient.status === 'Success');
+      if (!accepted) throw new Error('SMS not accepted');
+      return { verified: true, reference: String(recipients[0].messageId ?? ''), mode: 'live' as const };
     } catch { throw new ServiceUnavailableException('SMS could not be sent. Please retry.'); }
   }
 
