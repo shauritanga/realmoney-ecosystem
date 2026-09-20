@@ -34,7 +34,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     try {
       final code = await _sms.listen();
       if (!mounted || session != _smsSession ||
-          field('phone').text.trim() != phone || code == null) return;
+          field('phone').text.trim() != phone || code == null) { return; }
       if (_busy) {
         _pendingSmsCode = code;
       } else if (_step == 1 && field('code').text.isEmpty) {

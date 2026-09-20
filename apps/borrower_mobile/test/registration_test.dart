@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:borrower_mobile/services/sms_code_service.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -57,8 +56,8 @@ class FakeSmsCodeService extends SmsCodeService {
 }
 
 void main() {
-  setUp(() { SharedPreferences.setMockInitialValues({}); debugDefaultTargetPlatformOverride = TargetPlatform.linux; });
-  tearDown(() { debugDefaultTargetPlatformOverride = null; ApiService.client.close(); ApiService.client = http.Client(); });
+  setUp(() { SharedPreferences.setMockInitialValues({}); });
+  tearDown(() { ApiService.client.close(); ApiService.client = http.Client(); });
 
   for (final changeNumber in [false, true]) {
     testWidgets('SMS consent fills code only for the active phone flow: change=$changeNumber', (tester) async {
@@ -110,7 +109,7 @@ void main() {
       return http.Response('{}', 404);
     });
     await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) => Scaffold(body: TextButton(
-      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrationScreen())), child: const Text('Start'))))));
+      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationScreen(smsCodeService: FakeSmsCodeService()))), child: const Text('Start'))))));
     await tapText(tester, 'Start');
     await capture(tester, 'register-account');
     expect(find.byKey(const ValueKey('code')), findsNothing);
@@ -160,7 +159,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(const MaterialApp(home: RegistrationScreen()));
+    await tester.pumpWidget(MaterialApp(home: RegistrationScreen(smsCodeService: FakeSmsCodeService())));
     await tester.pumpAndSettle();
     await enter(tester, 'Mobile number', '0712345678');
     await tapText(tester, 'Send verification code');
@@ -180,7 +179,7 @@ void main() {
       if (attempts == 1) return http.Response(jsonEncode({'message': 'Invalid or expired code'}), 400);
       return http.Response(jsonEncode({'phone': '+255712345678', 'phoneProof': 'proof'}), 201);
     });
-    await tester.pumpWidget(const MaterialApp(home: RegistrationScreen()));
+    await tester.pumpWidget(MaterialApp(home: RegistrationScreen(smsCodeService: FakeSmsCodeService())));
     await tester.pumpAndSettle();
     await enter(tester, 'Mobile number', '0712345678');
     await tapText(tester, 'Send verification code');
@@ -208,7 +207,7 @@ void main() {
       if (request.url.path.endsWith('/phone-code')) return http.Response('{}', 201);
       return http.Response(jsonEncode({'phone': '+255712345678', 'phoneProof': 'proof'}), 201);
     });
-    await tester.pumpWidget(const MaterialApp(home: RegistrationScreen(existingProfile: {'phone': '+255712345678'})));
+    await tester.pumpWidget(MaterialApp(home: RegistrationScreen(existingProfile: const {'phone': '+255712345678'}, smsCodeService: FakeSmsCodeService())));
     await tester.pumpAndSettle();
     await tapText(tester, 'Send verification code');
     await enter(tester, '6-digit SMS code', '123456');

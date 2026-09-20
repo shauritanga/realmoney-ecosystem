@@ -160,7 +160,7 @@ describe('provider adapters', () => {
   it('sends Beem SMS with Basic authentication and never exposes the code as development', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ successful: true, request_id: 123 }) });
     vi.stubGlobal('fetch', fetchMock);
-    const provider = new VerificationProvider(new ConfigService({ BEEM_API_KEY: 'key', BEEM_API_SECRET: 'secret', BEEM_SENDER_ID: 'realMoney' }));
+    const provider = new VerificationProvider(new ConfigService({ BEEM_API_KEY: 'key', BEEM_API_SECRET: 'secret', BEEM_SENDER_ID: 'RealMoney' }));
     expect((await provider.request('sms', { phone: valid.phone, message: 'test code' })).mode).toBe('live');
     expect(fetchMock.mock.calls[0][0]).toBe('https://apisms.beem.africa/v1/send');
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).recipients[0].dest_addr).toBe('255712345678');

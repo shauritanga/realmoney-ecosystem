@@ -20,7 +20,7 @@ class RealMoneyBorrowerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'realMoney Digital Loans',
+      title: 'RealMoney',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.light,

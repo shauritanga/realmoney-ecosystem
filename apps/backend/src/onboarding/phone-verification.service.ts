@@ -48,7 +48,7 @@ export class PhoneVerificationService {
       if (row.sentAt && Date.now() - row.sentAt.getTime() < 60000) {
         throw new HttpException('Wait 60 seconds before requesting another code', 429);
       }
-      await this.provider.request('sms', { phone, message: `Your realMoney verification code is ${code}. It expires in 5 minutes. Do not share it.` });
+      await this.provider.request('sms', { phone, message: `Your RealMoney verification code is ${code}. It expires in 5 minutes. Do not share it.` });
       Object.assign(row, {
         codeHash: this.hash(`${phone}:${code}`), expiresAt: new Date(Date.now() + 300000),
         sentAt: new Date(), attempts: 0, proofHash: null, verifiedAt: null,

@@ -17,7 +17,7 @@ class CollectorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'realMoney Collector',
+      title: 'RealMoney Collector',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,

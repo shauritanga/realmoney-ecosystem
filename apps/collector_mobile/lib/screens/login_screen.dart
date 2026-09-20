@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  'realMoney Collector',
+                  'RealMoney Collector',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,

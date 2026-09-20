@@ -42,7 +42,7 @@ export function LogoutModal({ open, onClose, onConfirm }: LogoutModalProps) {
               Sign out of Admin Console?
             </h3>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              You will need to sign in again with your administrator credentials to access realMoney operations.
+              You will need to sign in again with your administrator credentials to access RealMoney operations.
             </p>
           </div>
           <button

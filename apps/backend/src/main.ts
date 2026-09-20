@@ -27,7 +27,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  logger.log(`🚀 realMoney API Backend server running on: http://localhost:${port}/api/v1`);
+  logger.log(`🚀 RealMoney API Backend server running on: http://localhost:${port}/api/v1`);
 }
 
 bootstrap();

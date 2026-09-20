@@ -99,7 +99,7 @@ export function AdminProfileModal({
           <div className="mt-2.5 flex items-center justify-between border-t border-zinc-200 pt-2.5 dark:border-zinc-800/80">
             <span className="text-xs text-zinc-500 dark:text-zinc-400">Environment</span>
             <span className="text-xs font-medium text-zinc-900 dark:text-zinc-200">
-              realMoney Microfinance TZ (Production)
+              RealMoney Microfinance TZ (Production)
             </span>
           </div>
           <div className="mt-2.5 flex items-center justify-between border-t border-zinc-200 pt-2.5 dark:border-zinc-800/80">

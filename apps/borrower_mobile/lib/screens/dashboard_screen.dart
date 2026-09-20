@@ -265,7 +265,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     onPopInvokedWithResult: (didPop, result) { if (!didPop) setState(() => _tab = 0); },
     child: Scaffold(
       appBar: AppBar(
-        title: Text(['realMoney', 'My loans', 'Payments', 'Account'][_tab]),
+        title: Text(['RealMoney', 'My loans', 'Payments', 'Account'][_tab]),
         actions: [if (_tab != 3) IconButton(tooltip: 'Refresh', onPressed: _isLoading ? null : _loadLoans, icon: const Icon(Icons.refresh))],
       ),
       bottomNavigationBar: NavigationBar(

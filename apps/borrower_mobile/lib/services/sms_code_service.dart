@@ -10,7 +10,7 @@ class SmsCodeService {
     final result = await SmartAuth.instance.getSmsWithUserConsentApi();
     if (!result.hasData) return null;
     // Ignore unrelated verification messages; the backend still validates the code.
-    return RegExp(r'Your realMoney verification code is (\d{6})\.')
+    return RegExp(r'Your [Rr]ealMoney verification code is (\d{6})\.')
         .firstMatch(result.requireData.sms)?.group(1);
   }
 

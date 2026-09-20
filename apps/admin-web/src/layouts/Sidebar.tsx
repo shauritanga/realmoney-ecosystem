@@ -65,7 +65,7 @@ export function Sidebar({
           {desktopOpen && (
             <div className="min-w-0 flex-1">
               <strong className="block truncate font-display text-sm text-zinc-900 dark:text-white">
-                realMoney
+                RealMoney
               </strong>
               <span className="block truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                 Admin console

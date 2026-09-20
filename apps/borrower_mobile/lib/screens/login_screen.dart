@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
       padding: const EdgeInsets.all(24),
       child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 440),
         child: Form(key: _form, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const Text('realMoney', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+          const Text('RealMoney', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           const Text('Sign in to manage your loans.'),
           const SizedBox(height: 32),

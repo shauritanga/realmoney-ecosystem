@@ -49,9 +49,9 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
       final due = _item.dueDate.length >= 10
           ? _item.dueDate.substring(0, 10)
           : _item.dueDate;
-      return 'Habari ${_item.borrowerName}, kumbusho kutoka realMoney: mkopo wako #${_item.loanNumber} wa TZS $amount unastahili tarehe $due. Tafadhali lipa mapema kupitia Selcom USSD ili kuepuka faini. Asante!';
+      return 'Habari ${_item.borrowerName}, kumbusho kutoka RealMoney: mkopo wako #${_item.loanNumber} wa TZS $amount unastahili tarehe $due. Tafadhali lipa mapema kupitia Selcom USSD ili kuepuka faini. Asante!';
     }
-    return 'Habari ${_item.borrowerName}, hili ni kumbusho kutoka realMoney kuhusu deni lako la mkopo #${_item.loanNumber} la TZS $amount lililochelewa kwa siku ${_item.daysOverdue}. Tafadhali lipa kupitia Selcom USSD au wasiliana nasi.';
+    return 'Habari ${_item.borrowerName}, hili ni kumbusho kutoka RealMoney kuhusu deni lako la mkopo #${_item.loanNumber} la TZS $amount lililochelewa kwa siku ${_item.daysOverdue}. Tafadhali lipa kupitia Selcom USSD au wasiliana nasi.';
   }
 
   Future<void> _handleCall() async {

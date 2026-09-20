@@ -1,6 +1,6 @@
 {
-    "name": "borrower_mobile",
-    "short_name": "borrower_mobile",
+    "name": "RealMoney",
+    "short_name": "RealMoney",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

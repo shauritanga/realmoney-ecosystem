@@ -75,7 +75,7 @@ export function LoginPage() {
             RM
           </div>
           <h1 className="font-display text-xl font-semibold tracking-[-0.03em] text-zinc-900 dark:text-white">
-            realMoney
+            RealMoney
           </h1>
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             Sign in to your account
