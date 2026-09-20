@@ -5,13 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/loan_assignment.dart';
 
 class ApiService {
-  // Use localhost for web/desktop, 10.0.2.2 for Android emulator
   static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:3001/api/v1';
-    }
-    // Default to localhost for desktop/Linux/macOS or emulator
-    return 'http://localhost:3001/api/v1';
+    return const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://money-api.zanua.co.tz/api/v1',
+    );
   }
 
   static Future<String?> getToken() async {

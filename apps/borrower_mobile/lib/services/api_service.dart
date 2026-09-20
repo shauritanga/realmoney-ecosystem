@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   static http.Client client = http.Client();
   static String get baseUrl => const String.fromEnvironment(
-    'API_BASE_URL', defaultValue: 'http://157.250.205.82/api/v1');
+    'API_BASE_URL', defaultValue: 'https://money-api.zanua.co.tz/api/v1');
 
   static Future<Map<String, dynamic>> request(String path,
       {String method = 'GET', Map<String, dynamic>? body, bool authenticated = true}) async {
