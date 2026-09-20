@@ -127,7 +127,7 @@ export function AdminProfileModal({
             </div>
             <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-2 text-zinc-700 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:text-zinc-300">
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
-              <span>Selcom USSD Push</span>
+              <span>ClickPesa USSD Push</span>
             </div>
             <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-2 text-zinc-700 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:text-zinc-300">
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />

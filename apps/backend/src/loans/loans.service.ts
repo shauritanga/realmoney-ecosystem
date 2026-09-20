@@ -4,7 +4,7 @@ import { Injectable, NotFoundException, BadRequestException, Optional } from '@n
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
-import { SelcomService } from '../selcom/selcom.service.js';
+import { ClickPesaService } from '../clickpesa/clickpesa.service.js';
 import { LoanStatus, AgingBucket, EntryType, AccountType } from '../database/enums.js';
 import { Loan } from '../database/entities/loan.entity.js';
 import { LoanProduct } from '../database/entities/loan-product.entity.js';
@@ -21,7 +21,7 @@ export class LoansService {
     @InjectRepository(LedgerEntry)
     private readonly ledger: Repository<LedgerEntry>,
     private readonly dataSource: DataSource,
-    private readonly selcomService: SelcomService,
+    private readonly clickPesaService: ClickPesaService,
     private readonly settings: SettingsService,
     private readonly onboarding: OnboardingService,
     @Optional() private readonly notifications?: NotificationsService,
@@ -226,11 +226,10 @@ export class LoansService {
       throw new BadRequestException(`Loan must be in APPROVED status to disburse. Current: ${loan.status}`);
     }
 
-    const disbursement = await this.selcomService.disburseLoan({
+    const disbursement = await this.clickPesaService.disburseLoan({
       loanId: loan.id,
       phone: loan.borrower.phone,
       amount: Number(loan.principalAmount),
-      adminId,
     });
 
     if (!disbursement.success) {
@@ -250,7 +249,7 @@ export class LoansService {
 
     // Double-entry bookkeeping (atomic):
     // Debit: LOAN_RECEIVABLE (Company asset increases)
-    // Credit: CASH_SELCOM (Cash transferred out)
+    // Credit: CASH_CLICKPESA (Cash transferred out)
     await this.dataSource.transaction(async (manager) => {
       await manager.update(Loan, { id: loanId }, {
         status: LoanStatus.ACTIVE,
@@ -272,10 +271,10 @@ export class LoansService {
         manager.create(LedgerEntry, {
           loanId: loan.id,
           entryType: EntryType.DISBURSEMENT,
-          accountType: AccountType.CASH_SELCOM,
+          accountType: AccountType.CASH_CLICKPESA,
           debit: 0,
           credit: Number(loan.principalAmount),
-          description: `Cash payout via Selcom B2C (${disbursement.transId})`,
+          description: `Cash payout via ClickPesa (${disbursement.transId})`,
         }),
       );
     });

@@ -133,7 +133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.pop(context); // Close loading
 
     final orderId = res['orderId']?.toString();
-    if (orderId != null) {
+    if (orderId != null && (res['success'] == true || res['retryable'] == true)) {
       _showPinPromptDialog(orderId, amount);
     } else {
       _showResultDialog(
@@ -365,8 +365,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           else _buildNoLoanBanner(),
           const SizedBox(height: 20),
           _buildLimitLadder(),
-          const SizedBox(height: 16),
-          TextButton.icon(onPressed: () => setState(() => _tab = 1), icon: const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01), label: const Text('View all loans')),
+          const SizedBox(height: 24),
+          _buildRecentLoans(),
         ]),
         _page(1, [
           _heading('Your loans'),
@@ -686,7 +686,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 8),
           Text(
             isApproved
-                ? 'Your loan #${loan['loanNumber']} was approved. Funds are being disbursed to your mobile wallet via Selcom — usually within minutes.'
+                ? 'Your loan #${loan['loanNumber']} was approved. Funds are being disbursed to your mobile wallet via ClickPesa — usually within minutes.'
                 : 'Your loan #${loan['loanNumber']} is with a credit officer. You’ll be notified once it’s approved — no action needed.',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
@@ -790,6 +790,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
               'Apply for a loan',
               style: TextStyle(color: AppColors.onPrimary, fontWeight: FontWeight.bold, fontSize: 14),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Home-tab section: the three latest loans with a "View all" shortcut
+  /// to the full history on the My loans tab.
+  Widget _buildRecentLoans() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text('Recent loans',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+            if (_loans.isNotEmpty)
+              TextButton(
+                onPressed: () => setState(() => _tab = 1),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+                child: const Text('View all'),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_loans.isEmpty)
+          _buildEmptyLoansCard()
+        else
+          ..._loans.take(3).map((loan) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Material(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => _showLoan(loan),
+                    child: _buildHistoryItem(loan),
+                  ),
+                ),
+              )),
+      ],
+    );
+  }
+
+  Widget _buildEmptyLoansCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const HugeIcon(
+              icon: HugeIcons.strokeRoundedFile02,
+              color: AppColors.primary,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('No loans yet',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          const Text(
+            'Your applications and loan history will appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
         ],
       ),

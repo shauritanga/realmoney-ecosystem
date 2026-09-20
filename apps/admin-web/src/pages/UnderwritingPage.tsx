@@ -17,7 +17,7 @@ export function UnderwritingPage() {
       <PageHeading
         eyebrow="Credit operations"
         title="Underwriting desk"
-        description="Review borrower readiness, approve credit and release funds through Selcom."
+        description="Review borrower readiness, approve credit and release funds through ClickPesa."
         action={
           <span className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
             <HugeiconsIcon icon={Clock01Icon} size={14} className="text-emerald-600 dark:text-emerald-400" /> {pending} pending

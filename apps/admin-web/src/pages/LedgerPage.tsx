@@ -7,6 +7,7 @@ import type { LedgerEntry } from '../types';
 
 export function LedgerPage() {
   const { ledger, loading } = useDashboardData();
+  const accountLabel = (account: string) => account === 'CASH_CLICKPESA' ? 'CASH_CLICKPESA' : account === 'CASH_SELCOM' ? 'CASH_SELCOM (legacy)' : account;
 
   if (ledger.length === 0 && loading) {
     return <LoadingState />;
@@ -59,7 +60,7 @@ export function LedgerPage() {
                     </td>
                     <td>
                       <span className="rounded-md border border-zinc-200 bg-zinc-100 px-2 py-1 font-mono text-[10px] font-medium text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                        {entry.accountType}
+                        {accountLabel(entry.accountType)}
                       </span>
                     </td>
                     <td className="font-semibold text-emerald-700 dark:text-emerald-400">

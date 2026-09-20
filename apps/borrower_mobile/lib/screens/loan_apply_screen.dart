@@ -319,7 +319,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'On approval, funds land directly in your M-Pesa, Tigo Pesa, or Airtel Money wallet via Selcom.',
+                    'On approval, funds land directly in your M-Pesa, Tigo Pesa, or Airtel Money wallet via ClickPesa.',
                     style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                   ),
                 ),

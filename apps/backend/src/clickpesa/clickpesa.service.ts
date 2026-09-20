@@ -25,8 +25,8 @@ export class ClickPesaService {
   async triggerUssdPush(params: { loanId: string; amount: number }, actor: PaymentActor) {
     if (typeof params.loanId !== 'string' || !/^[0-9a-f-]{36}$/i.test(params.loanId)) throw new BadRequestException('Invalid loan ID');
     const amount = params.amount;
-    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 1 || Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001) {
-      throw new BadRequestException('Enter a positive amount with at most two decimal places');
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 500 || Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001) {
+      throw new BadRequestException('ClickPesa mobile-money payments must be at least TZS 500 and have at most two decimal places');
     }
     const prepared = await this.db.transaction(async manager => {
       const loan = await manager.findOne(Loan, { where: { id: params.loanId }, lock: { mode: 'pessimistic_write' } });
@@ -54,6 +54,16 @@ export class ClickPesaService {
     const { orderId } = prepared;
     if (prepared.existing) return { success: true, orderId, message: 'A payment is already pending. Check its status before starting another.' };
     try {
+      const preview = await this.client.request('/payments/preview-ussd-push-request', {
+        amount: amount.toFixed(2), currency: 'TZS', orderReference: orderId,
+        phoneNumber: prepared.phone, fetchSenderDetails: false,
+      });
+      const available = Array.isArray(preview.activeMethods)
+        && preview.activeMethods.some((method: any) => method?.status === 'AVAILABLE');
+      if (!available) {
+        const reason = preview.activeMethods?.find((method: any) => method?.message)?.message;
+        throw new BadRequestException(reason || 'No ClickPesa mobile-money collection method is available');
+      }
       const data = await this.client.request('/payments/initiate-ussd-push-request', {
         amount: amount.toFixed(2), currency: 'TZS', orderReference: orderId, phoneNumber: prepared.phone,
       });
@@ -61,9 +71,37 @@ export class ClickPesaService {
         return { success: false, orderId, message: 'Payment was not confirmed. Check its status before retrying.' };
       }
       return { success: true, orderId, message: 'Check your phone and authorize the mobile-money prompt.' };
-    } catch {
+    } catch (error: any) {
+      const providerStatus = typeof error?.getStatus === 'function' ? error.getStatus() : 0;
+      if (providerStatus >= 400 && providerStatus < 500) {
+        await this.db.getRepository(Repayment).update(
+          { providerReference: orderId },
+          { status: RepaymentStatus.FAILED, notes: error.message },
+        );
+      }
       // An HTTP timeout does not prove that the provider rejected the push.
-      return { success: false, orderId, message: 'Dispatch could not be confirmed. Check payment status before retrying.' };
+      return {
+        success: false,
+        retryable: providerStatus < 400 || providerStatus >= 500,
+        orderId,
+        message: error?.message || 'Dispatch could not be confirmed. Check payment status before retrying.',
+      };
+    }
+  }
+
+  async disburseLoan(params: { loanId: string; phone: string; amount: number }) {
+    const phone = params.phone.replace(/[\s()+-]/g, '').replace(/^0([67])/, '255$1');
+    if (!/^255[67]\d{8}$/.test(phone)) return { success: false, message: 'A valid Tanzanian mobile number is required' };
+    if (!Number.isFinite(params.amount) || params.amount <= 0) return { success: false, message: 'Invalid payout amount' };
+    const orderReference = `P${randomBytes(9).toString('hex')}`;
+    try {
+      const response = await this.client.request('/payouts/create-mobile-money-payout', {
+        amount: params.amount, phoneNumber: phone, currency: 'TZS', orderReference,
+      });
+      const success = response.orderReference === orderReference && ['AUTHORIZED', 'SUCCESS'].includes(response.status);
+      return { success, transId: response.id, message: success ? 'ClickPesa payout accepted' : 'ClickPesa payout was not accepted' };
+    } catch (error: any) {
+      return { success: false, message: error?.message || 'ClickPesa payout failed' };
     }
   }
 

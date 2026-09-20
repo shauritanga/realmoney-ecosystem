@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac } from 'node:crypto';
 
@@ -9,6 +9,10 @@ export function canonicalize(value: unknown): unknown {
       .map(([key, item]) => [key, canonicalize(item)]));
   }
   return value;
+}
+
+export class ClickPesaProviderError extends Error {
+  constructor(readonly status: number, message: string) { super(message); }
 }
 
 @Injectable()
@@ -50,10 +54,19 @@ export class ClickPesaClient {
       });
       if (!response.ok) {
         if (response.status === 401) { this.token = ''; this.expiresAt = 0; }
-        throw new Error('Provider request failed');
+        let message = 'ClickPesa rejected the request';
+        try {
+          const body = await response.json();
+          if (typeof body?.message === 'string' && body.message.length <= 180) message = body.message;
+        } catch { /* use safe generic message */ }
+        throw new ClickPesaProviderError(response.status, message);
       }
       return await response.json();
-    } catch {
+    } catch (error) {
+      if (error instanceof ClickPesaProviderError) {
+        if (error.status >= 400 && error.status < 500) throw new BadRequestException(error.message);
+        throw new ServiceUnavailableException(error.message);
+      }
       // Never expose upstream bodies, credentials, or customer information.
       throw new ServiceUnavailableException('ClickPesa is unavailable. Check payment status before retrying.');
     }

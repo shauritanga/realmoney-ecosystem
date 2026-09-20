@@ -97,20 +97,20 @@ describe('ClickPesa reconciliation', () => {
 
   it.each([NaN, Infinity, 0, -1, 1.234, '100'])('rejects invalid amount %s before accessing the database', async amount => {
     const s = setup();
-    await expect(s.service.triggerUssdPush({ loanId: '00000000-0000-0000-0000-000000000000', amount: amount as number }, { id: 'borrower', role: UserRole.BORROWER })).rejects.toThrow('positive amount');
+    await expect(s.service.triggerUssdPush({ loanId: '00000000-0000-0000-0000-000000000000', amount: amount as number }, { id: 'borrower', role: UserRole.BORROWER })).rejects.toThrow('at least TZS 500');
     expect(s.db.transaction).not.toHaveBeenCalled();
   });
 });
 
 describe('ClickPesa dispatch', () => {
   function dispatchSetup(pending = false) {
-    const loan = { id: '00000000-0000-0000-0000-000000000000', borrowerId: 'borrower', outstandingBalance: 200, status: LoanStatus.ACTIVE, borrower: { phone: '0712 345 678' } };
+    const loan = { id: '00000000-0000-0000-0000-000000000000', borrowerId: 'borrower', outstandingBalance: 2000, status: LoanStatus.ACTIVE, borrower: { phone: '0712 345 678' } };
     const manager = {
       findOne: vi.fn(async entity => entity === Loan ? loan : pending ? { providerReference: 'RM012345678901234567' } : null),
       findOneOrFail: vi.fn(async () => loan),
       create: vi.fn((_entity, data) => data), save: vi.fn(async (_entity, data) => data),
     };
-    const client = { ensureReady: vi.fn(async () => {}), request: vi.fn(async (_path, body) => ({ status: 'PROCESSING', orderReference: body.orderReference })) };
+    const client = { ensureReady: vi.fn(async () => {}), request: vi.fn(async (path: string, body: any) => path.includes('preview') ? ({ activeMethods: [{ status: 'AVAILABLE' }] }) : ({ status: 'PROCESSING', orderReference: body.orderReference })) };
     const db = { transaction: vi.fn(async fn => fn(manager)) };
     const service = new ClickPesaService(client as any, db as any);
     return { client, manager, service, loan, actor: { id: 'borrower', role: UserRole.BORROWER } };
@@ -118,16 +118,16 @@ describe('ClickPesa dispatch', () => {
 
   it('persists a pending order before sending normalized phone, TZS and decimal amount', async () => {
     const s = dispatchSetup();
-    const result = await s.service.triggerUssdPush({ loanId: s.loan.id, amount: 100 }, s.actor);
+    const result = await s.service.triggerUssdPush({ loanId: s.loan.id, amount: 1000 }, s.actor);
     expect(result.success).toBe(true);
     expect(result.orderId).toMatch(/^RM[a-f0-9]{18}$/);
-    expect(s.client.request.mock.calls[0][1]).toEqual({ amount: '100.00', currency: 'TZS', phoneNumber: '255712345678', orderReference: result.orderId });
+    expect(s.client.request.mock.calls[1][1]).toEqual({ amount: '1000.00', currency: 'TZS', phoneNumber: '255712345678', orderReference: result.orderId });
     expect(s.manager.save.mock.invocationCallOrder[0]).toBeLessThan(s.client.request.mock.invocationCallOrder[0]);
   });
 
   it('reuses a pending order without sending another push', async () => {
     const s = dispatchSetup(true);
-    const result = await s.service.triggerUssdPush({ loanId: s.loan.id, amount: 100 }, s.actor);
+    const result = await s.service.triggerUssdPush({ loanId: s.loan.id, amount: 1000 }, s.actor);
     expect(result.orderId).toBe('RM012345678901234567');
     expect(s.client.request).not.toHaveBeenCalled();
     expect(s.manager.save).not.toHaveBeenCalled();
@@ -136,7 +136,7 @@ describe('ClickPesa dispatch', () => {
   it('preserves pending state after an ambiguous network error', async () => {
     const s = dispatchSetup();
     s.client.request.mockRejectedValue(new Error('timeout'));
-    const result = await s.service.triggerUssdPush({ loanId: s.loan.id, amount: 100 }, s.actor);
+    const result = await s.service.triggerUssdPush({ loanId: s.loan.id, amount: 1000 }, s.actor);
     expect(result.success).toBe(false);
     expect(result.orderId).toBeTruthy();
     expect(s.manager.save.mock.calls[0][1].status).toBe('PENDING');
@@ -146,7 +146,7 @@ describe('ClickPesa dispatch', () => {
   it('does not create an order when authentication fails', async () => {
     const s = dispatchSetup();
     s.client.ensureReady.mockRejectedValue(new Error('authentication failed'));
-    await expect(s.service.triggerUssdPush({ loanId: s.loan.id, amount: 100 }, s.actor)).rejects.toThrow('authentication failed');
+    await expect(s.service.triggerUssdPush({ loanId: s.loan.id, amount: 1000 }, s.actor)).rejects.toThrow('authentication failed');
     expect(s.manager.save).not.toHaveBeenCalled();
     expect(s.client.request).not.toHaveBeenCalled();
   });

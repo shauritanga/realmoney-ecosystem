@@ -1,8 +1,8 @@
 # ClickPesa repayments
 
 Borrower and assigned-collector repayments use ClickPesa mobile-money USSD push.
-Loan disbursements and onboarding wallet lookup still use the existing Selcom
-integration; these have not been migrated to ClickPesa.
+Loan disbursements also use ClickPesa mobile-money payouts. Selcom remains only for
+the legacy wallet-name verification path and historical ledger entries.
 
 ## Configuration
 
@@ -46,7 +46,8 @@ implementation does not configure the production server or ClickPesa dashboard.
 ## Flow and verification
 
 1. The existing authenticated `POST /api/v1/collections/trigger-payment` accepts
-   `{ "loanId": "uuid", "amount": 100 }`. Borrowers may pay their own loans;
+   `{ "loanId": "uuid", "amount": 1000 }`. ClickPesa's mobile-money minimum is
+   TZS 500. Borrowers may pay their own loans;
    collectors must have an active assignment; administrators may access all loans.
 2. A pending repayment is stored before dispatch. Its `orderId` is an alphanumeric
    20-character reference. A pending ClickPesa repayment prevents duplicate pushes
