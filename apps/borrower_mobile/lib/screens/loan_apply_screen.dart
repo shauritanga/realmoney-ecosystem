@@ -1,5 +1,6 @@
 import '../theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 
@@ -313,7 +314,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
             const SizedBox(height: 12),
             const Row(
               children: [
-                Icon(Icons.account_balance_wallet,
+                HugeIcon(icon: HugeIcons.strokeRoundedWallet01,
                     color: AppColors.primary, size: 16),
                 SizedBox(width: 8),
                 Expanded(

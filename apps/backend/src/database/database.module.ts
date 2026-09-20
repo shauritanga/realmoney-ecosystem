@@ -13,6 +13,7 @@ import { CollectorAssignment } from './entities/collector-assignment.entity.js';
 import { InteractionLog } from './entities/interaction-log.entity.js';
 import { PromiseToPay } from './entities/promise-to-pay.entity.js';
 import { DeviceToken } from '../notifications/device-token.entity.js';
+import { Location } from './entities/location.entity.js';
 
 export const APP_ENTITIES = [
   PaymentWebhookEvent,
@@ -27,6 +28,7 @@ export const APP_ENTITIES = [
   InteractionLog,
   PromiseToPay,
   DeviceToken,
+  Location,
 ];
 
 @Module({

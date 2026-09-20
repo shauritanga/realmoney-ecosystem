@@ -1,5 +1,6 @@
 import '../theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../services/api_service.dart';
 import 'registration_screen.dart';
 
@@ -54,7 +55,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       validator: (v) { final amount = double.tryParse(v ?? ''); return amount == null || !amount.isFinite || amount < 0 || amount > 1000000000 ? 'Enter an amount from 0 to 1,000,000,000' : null; }),
   );
   Widget _status(String label, bool done) => Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(children: [
-    Icon(done ? Icons.check_circle : Icons.radio_button_unchecked, color: done ? AppColors.primary : Colors.grey),
+    HugeIcon(icon: done ? HugeIcons.strokeRoundedCheckmarkCircle01 : HugeIcons.strokeRoundedCircle, color: done ? AppColors.primary : Colors.grey),
     const SizedBox(width: 12), Expanded(child: Text(label)),
   ]));
   @override

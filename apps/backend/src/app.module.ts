@@ -9,6 +9,7 @@ import { LoansModule } from './loans/loans.module.js';
 import { CollectionsModule } from './collections/collections.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { LocationsModule } from './locations/locations.module.js';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
     CollectionsModule,
     AdminModule,
     NotificationsModule,
+    LocationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

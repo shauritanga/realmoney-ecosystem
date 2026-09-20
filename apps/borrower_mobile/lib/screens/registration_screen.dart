@@ -2,8 +2,11 @@ import '../theme/app_colors.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../services/api_service.dart';
 import '../services/sms_code_service.dart';
+import '../services/locations_service.dart';
+import '../widgets/location_picker_sheet.dart';
 
 class RegistrationScreen extends StatefulWidget {
   final Map<String, dynamic>? existingProfile;
@@ -87,6 +90,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       _identityType = onboarding['identityType'] ?? 'NIDA';
     }
     _loadLegal();
+    LocationsService.load();
   }
   @override
   void dispose() { _stopSms(); _scroll.dispose(); _timer?.cancel(); for (final c in _fields.values) { c.dispose(); } super.dispose(); }
@@ -179,7 +183,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           onPressed: () => setState(() {
             if (!_visiblePasswords.remove(name)) _visiblePasswords.add(name);
           }),
-          icon: Icon(_visiblePasswords.contains(name) ? Icons.visibility_off_outlined : Icons.visibility_outlined)) : null),
+          icon: HugeIcon(icon: _visiblePasswords.contains(name) ? HugeIcons.strokeRoundedViewOff : HugeIcons.strokeRoundedView, color: AppColors.textMuted, size: 20)) : null),
       onChanged: name == 'phone' ? (_) => setState(() { _proof = null; _verifiedPhone = null; }) : null,
       validator: (value) {
         final text = value ?? '';
@@ -199,6 +203,86 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       }),
   );
 
+  Future<void> _pickLocation(String name, String label) async {
+    FocusScope.of(context).unfocus();
+    await LocationsService.load();
+    if (!mounted) return;
+
+    List<String> items = [];
+    if (name == 'region') {
+      items = LocationsService.getRegions();
+    } else if (name == 'district') {
+      final region = field('region').text.trim();
+      items = LocationsService.getDistricts(region);
+    } else if (name == 'ward') {
+      final region = field('region').text.trim();
+      final district = field('district').text.trim();
+      items = LocationsService.getWards(region, district);
+    }
+
+    final selected = await LocationPickerSheet.show(
+      context: context,
+      title: 'Select $label',
+      items: items,
+      selectedItem: field(name).text.trim().isEmpty ? null : field(name).text.trim(),
+      searchHint: 'Search $label…',
+    );
+
+    if (selected != null && mounted) {
+      final previous = field(name).text;
+      field(name).text = selected;
+      if (name == 'region' && previous != selected) {
+        field('district').clear();
+        field('ward').clear();
+      } else if (name == 'district' && previous != selected) {
+        field('ward').clear();
+      }
+      setState(() {});
+    }
+  }
+
+  Widget _locationDropdown(String name, String label) {
+    final isRegion = name == 'region';
+    final isDistrict = name == 'district';
+    final isWard = name == 'ward';
+
+    final region = field('region').text.trim();
+    final district = field('district').text.trim();
+
+    final isEnabled = !_busy && (isRegion || (isDistrict && region.isNotEmpty) || (isWard && district.isNotEmpty));
+
+    String? hint;
+    if (isDistrict && region.isEmpty) hint = 'Select region first';
+    if (isWard && district.isEmpty) hint = 'Select district first';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: TextFormField(
+        key: ValueKey(name),
+        controller: field(name),
+        readOnly: true,
+        enabled: !_busy,
+        onTap: isEnabled ? () => _pickLocation(name, label) : null,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          border: const OutlineInputBorder(),
+          suffixIcon: Icon(
+            Icons.arrow_drop_down_rounded,
+            color: isEnabled ? AppColors.text : AppColors.textMuted,
+            size: 28,
+          ),
+        ),
+        validator: (val) {
+          if (val == null || val.trim().isEmpty) {
+            return 'Select $label';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
   void _readDocument(String kind) {
     final title = kind == 'terms' ? 'Account terms' : 'Privacy notice';
     Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
@@ -212,7 +296,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     canPop: _completed || (!_busy && _step == 0),
     onPopInvokedWithResult: (didPop, result) { if (!didPop) _back(); },
     child: Scaffold(
-    appBar: AppBar(leading: IconButton(tooltip: 'Back', onPressed: _busy ? null : _back, icon: const Icon(Icons.arrow_back)), title: Text(_existing ? 'Complete registration' : 'Create your account')),
+    appBar: AppBar(leading: IconButton(tooltip: 'Back', onPressed: _busy ? null : _back, icon: const HugeIcon(icon: HugeIcons.strokeRoundedArrowLeft01)), title: Text(_existing ? 'Complete registration' : 'Create your account')),
     body: SafeArea(child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 560),
       child: _loading ? const Center(child: CircularProgressIndicator()) : _legal == null
         ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text(_error ?? 'Unable to load terms'), TextButton(onPressed: _loadLegal, child: const Text('Retry'))])
@@ -270,51 +354,59 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           const Text('We will verify these details before you can apply for a loan.'),
                         ],
                         if (_step == 4) ...[
-                          _input('region', 'Region'), _input('district', 'District'), _input('ward', 'Ward'), _input('street', 'Street / village'),
+                          _locationDropdown('region', 'Region'),
+                          _locationDropdown('district', 'District'),
+                          _locationDropdown('ward', 'Ward'),
+                          _input('street', 'Street / village'),
                           _input('landmark', 'House number / landmark (optional)', optional: true),
                           const SizedBox(height: 8),
-                          InkWell(
-                            onTap: _busy ? null : () => setState(() {
-                              final next = !(_terms && _privacy);
-                              _terms = next;
-                              _privacy = next;
-                            }),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 6),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: Wrap(
-                                      crossAxisAlignment: WrapCrossAlignment.center,
-                                      children: [
-                                        const Text('I accept the '),
-                                        GestureDetector(
-                                          behavior: HitTestBehavior.opaque,
-                                          onTap: () => _readDocument('terms'),
-                                          child: const Text('Account terms',
-                                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, decoration: TextDecoration.underline)),
-                                        ),
-                                        const Text(' and '),
-                                        GestureDetector(
-                                          behavior: HitTestBehavior.opaque,
-                                          onTap: () => _readDocument('privacy'),
-                                          child: const Text('Privacy notice',
-                                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, decoration: TextDecoration.underline)),
-                                        ),
-                                      ],
-                                    ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      InkWell(
+                                        onTap: _busy ? null : () => setState(() {
+                                          final next = !(_terms && _privacy);
+                                          _terms = next;
+                                          _privacy = next;
+                                        }),
+                                        child: const Text('I accept the '),
+                                      ),
+                                      InkWell(
+                                        onTap: () => _readDocument('terms'),
+                                        child: const Text('Account terms',
+                                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, decoration: TextDecoration.underline)),
+                                      ),
+                                      InkWell(
+                                        onTap: _busy ? null : () => setState(() {
+                                          final next = !(_terms && _privacy);
+                                          _terms = next;
+                                          _privacy = next;
+                                        }),
+                                        child: const Text(' and '),
+                                      ),
+                                      InkWell(
+                                        onTap: () => _readDocument('privacy'),
+                                        child: const Text('Privacy notice',
+                                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, decoration: TextDecoration.underline)),
+                                      ),
+                                    ],
                                   ),
-                                  Checkbox(
-                                    key: const ValueKey('terms_privacy_checkbox'),
-                                    value: _terms && _privacy,
-                                    onChanged: _busy ? null : (v) => setState(() {
-                                      _terms = v ?? false;
-                                      _privacy = v ?? false;
-                                    }),
-                                  ),
-                                ],
-                              ),
+                                ),
+                                Checkbox(
+                                  key: const ValueKey('terms_privacy_checkbox'),
+                                  value: _terms && _privacy,
+                                  onChanged: _busy ? null : (v) => setState(() {
+                                    _terms = v ?? false;
+                                    _privacy = v ?? false;
+                                  }),
+                                ),
+                              ],
                             ),
                           ),
                         ],

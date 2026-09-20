@@ -1,5 +1,6 @@
 import '../theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../services/api_service.dart';
 import 'dashboard_screen.dart';
 import 'registration_screen.dart';
@@ -74,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
               suffixIcon: IconButton(
                 tooltip: _passwordVisible ? 'Hide password' : 'Show password',
                 onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
-                icon: Icon(_passwordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined))),
+                icon: HugeIcon(icon: _passwordVisible ? HugeIcons.strokeRoundedViewOff : HugeIcons.strokeRoundedView))),
             validator: (v) => v == null || v.isEmpty ? 'Enter your password' : null,
             onFieldSubmitted: (_) { if (!_busy) _login(); }),
           if (_error != null) Padding(padding: const EdgeInsets.only(top: 16),

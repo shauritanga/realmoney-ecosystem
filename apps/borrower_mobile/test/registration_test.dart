@@ -28,7 +28,12 @@ Future<void> tapText(WidgetTester tester, String text) async {
 Future<void> enter(WidgetTester tester, String label, String value) async {
   final finder = find.widgetWithText(TextFormField, label);
   await tester.ensureVisible(finder);
-  await tester.enterText(finder, value);
+  final formField = tester.widget<TextFormField>(finder);
+  if (formField.controller != null) {
+    formField.controller!.text = value;
+  } else {
+    await tester.enterText(finder, value);
+  }
   await tester.pump();
 }
 

@@ -1,11 +1,14 @@
 import '../theme/app_colors.dart';
 import 'onboarding_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../services/push_service.dart';
+import 'home_header.dart';
 import 'loan_apply_screen.dart';
 import 'account_tab.dart';
+import 'notifications_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,6 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _loans = [];
   int _tab = 0;
   String? _loadError;
+  String? _borrowerName;
   final _scrollControllers = List.generate(3, (_) => ScrollController());
   bool _isLoading = true;
   double? _currentLimit;
@@ -36,6 +40,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     PushService.onAuthenticated();
     _loadLoans();
+    _loadProfile();
+  }
+
+  /// Best-effort fetch of the borrower's name for the home header greeting.
+  /// A missing profile never blocks the loan list.
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await ApiService.request('/onboarding');
+      if (!mounted) return;
+      final name = profile['fullName']?.toString().trim();
+      setState(() => _borrowerName = (name == null || name.isEmpty) ? null : name);
+    } catch (_) {}
   }
 
   Future<void> _loadLoans() async {
@@ -143,7 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Row(
               children: [
-                Icon(Icons.smartphone, color: AppColors.primary),
+                HugeIcon(icon: HugeIcons.strokeRoundedSmartPhone01, color: AppColors.primary),
                 SizedBox(width: 8),
                 Text('Check your phone',
                     style: TextStyle(color: AppColors.text, fontSize: 16)),
@@ -231,8 +247,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(
-              success ? Icons.check_circle : Icons.error,
+            HugeIcon(
+              icon: success
+                  ? HugeIcons.strokeRoundedCheckmarkCircle01
+                  : HugeIcons.strokeRoundedAlertCircle,
               color: success
                   ? AppColors.primary
                   : AppColors.error,
@@ -258,6 +276,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Home-header bell: opens the notifications screen with the latest loans.
+  /// The badge counts actionable items (overdue, due soon, pipeline updates).
+  Widget _notificationButton() {
+    final unread = unreadNotificationCount(_loans);
+    return IconButton(
+      tooltip: 'Notifications',
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => NotificationsScreen(loans: _loans)),
+      ),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const HugeIcon(icon: HugeIcons.strokeRoundedNotification01),
+          if (unread > 0)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                constraints:
+                    const BoxConstraints(minWidth: 16, minHeight: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: const BoxDecoration(
+                  color: AppColors.error,
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+                child: Text(
+                  unread > 9 ? '9+' : '$unread',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.onPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: _tab == 0,
@@ -265,13 +327,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     child: Scaffold(
       appBar: AppBar(
         title: _tab == 0
-            ? Image.asset(
-                'assets/images/logo_horizontal.png',
-                height: 30,
-                semanticLabel: 'RealMoney',
-              )
+            ? HomeHeaderTitle(fullName: _borrowerName)
             : Text(['RealMoney', 'My loans', 'Payments', 'Account'][_tab]),
-        actions: [if (_tab != 3) IconButton(tooltip: 'Refresh', onPressed: _isLoading ? null : _loadLoans, icon: const Icon(Icons.refresh))],
+        actions: [
+          if (_tab == 0) _notificationButton(),
+          if (_tab != 3)
+            IconButton(
+              tooltip: 'Refresh',
+              onPressed: _isLoading
+                  ? null
+                  : () {
+                      _loadLoans();
+                      _loadProfile();
+                    },
+              icon: const HugeIcon(icon: HugeIcons.strokeRoundedRefresh),
+            ),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
@@ -280,10 +351,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         indicatorColor: AppColors.successTint,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.description_outlined), selectedIcon: Icon(Icons.description), label: 'My loans'),
-          NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: 'Payments'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Account'),
+          NavigationDestination(icon: HugeIcon(icon: HugeIcons.strokeRoundedHome01), selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedHome01), label: 'Home'),
+          NavigationDestination(icon: HugeIcon(icon: HugeIcons.strokeRoundedFile02), selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedFile02), label: 'My loans'),
+          NavigationDestination(icon: HugeIcon(icon: HugeIcons.strokeRoundedWallet01), selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedWallet01), label: 'Payments'),
+          NavigationDestination(icon: HugeIcon(icon: HugeIcons.strokeRoundedUser), selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUser), label: 'Account'),
         ],
       ),
       body: SafeArea(top: false, child: IndexedStack(index: _tab, children: [
@@ -295,13 +366,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 20),
           _buildLimitLadder(),
           const SizedBox(height: 16),
-          TextButton.icon(onPressed: () => setState(() => _tab = 1), icon: const Icon(Icons.arrow_forward), label: const Text('View all loans')),
+          TextButton.icon(onPressed: () => setState(() => _tab = 1), icon: const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01), label: const Text('View all loans')),
         ]),
         _page(1, [
           _heading('Your loans'),
           const Text('Track applications and review your borrowing history.', style: TextStyle(color: AppColors.textMuted)),
           const SizedBox(height: 20),
-          if (_loans.isEmpty) _empty(Icons.description_outlined, 'No loans yet', 'Your applications and loans will appear here.')
+          if (_loans.isEmpty) _empty(HugeIcons.strokeRoundedFile02, 'No loans yet', 'Your applications and loans will appear here.')
           else ..._loans.map((loan) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Material(
             color: AppColors.surface, borderRadius: BorderRadius.circular(14),
             child: InkWell(borderRadius: BorderRadius.circular(14), onTap: () => _showLoan(loan), child: _buildHistoryItem(loan)),
@@ -311,17 +382,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _page(2, [
           _heading('Make a payment'),
           if (_payableLoan != null) _buildActiveLoanCard(_payableLoan, showRepayment: true)
-          else _empty(Icons.check_circle_outline, 'Nothing to repay', 'Repayment becomes available after a loan is disbursed.'),
+          else _empty(HugeIcons.strokeRoundedCheckmarkCircle02, 'Nothing to repay', 'Repayment becomes available after a loan is disbursed.'),
           const SizedBox(height: 28),
           _heading('Payment history'),
-          if (_payments.isEmpty) _empty(Icons.receipt_long_outlined, 'No payments yet', 'Payment attempts and confirmed receipts will appear here.')
+          if (_payments.isEmpty) _empty(HugeIcons.strokeRoundedInvoice01, 'No payments yet', 'Payment attempts and confirmed receipts will appear here.')
           else ..._payments.map((payment) => Card(elevation: 0, color: AppColors.surface, child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: Icon(payment['status'] == 'COMPLETED' ? Icons.check_circle_outline : Icons.schedule, color: AppColors.primary),
+            leading: HugeIcon(icon: payment['status'] == 'COMPLETED' ? HugeIcons.strokeRoundedCheckmarkCircle02 : HugeIcons.strokeRoundedClock01, color: AppColors.primary),
             title: Text(_money(payment['amount'])),
             subtitle: Text('${payment['loanNumber']} · ${_date(payment['paidAt'] ?? payment['createdAt'])}\n${_status(payment['status'])}'),
             isThreeLine: true,
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, size: 18),
             onTap: () => _showPayment(payment),
           ))),
         ]),
@@ -346,9 +417,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _heading(String title) => Padding(padding: const EdgeInsets.only(bottom: 16), child: Text(title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w700)));
-  Widget _empty(IconData icon, String title, String message) => Padding(
+  Widget _empty(List<List<dynamic>> icon, String title, String message) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(icon, size: 32, color: AppColors.primary), const SizedBox(height: 12),
+      HugeIcon(icon: icon, size: 32, color: AppColors.primary), const SizedBox(height: 12),
       Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
       const SizedBox(height: 8), Text(message, style: const TextStyle(color: AppColors.textMuted, height: 1.5)),
     ]),
@@ -494,7 +565,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          if (!showRepayment) FilledButton.icon(onPressed: () => setState(() => _tab = 2), icon: const Icon(Icons.account_balance_wallet_outlined), label: const Text('Make a payment')),
+          if (!showRepayment) FilledButton.icon(onPressed: () => setState(() => _tab = 2), icon: const HugeIcon(icon: HugeIcons.strokeRoundedWallet01), label: const Text('Make a payment')),
           if (showRepayment) ...[
           // Repayment controls live in the Payments tab.
           const Text('REPAY AMOUNT (TZS)',
@@ -557,7 +628,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.bolt, color: AppColors.onPrimary, size: 20),
+                HugeIcon(icon: HugeIcons.strokeRoundedZap, color: AppColors.onPrimary, size: 20),
                 SizedBox(width: 8),
                 Text(
                   'Repay via ClickPesa USSD',
@@ -604,7 +675,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.hourglass_top, color: AppColors.warning, size: 22),
+              const HugeIcon(icon: HugeIcons.strokeRoundedHourglass, color: AppColors.warning, size: 22),
               const SizedBox(width: 8),
               Text(
                 isApproved ? 'Loan approved — payout soon' : 'Application under review',
@@ -633,7 +704,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          Icon(done ? Icons.check_circle : Icons.radio_button_unchecked,
+          HugeIcon(icon: done ? HugeIcons.strokeRoundedCheckmarkCircle01 : HugeIcons.strokeRoundedCircle,
               color: done ? AppColors.primary : AppColors.textMuted, size: 16),
           const SizedBox(width: 8),
           Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
@@ -682,7 +753,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.verified, color: AppColors.primary, size: 24),
+              HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkBadge01, color: AppColors.primary, size: 24),
               SizedBox(width: 8),
               Text(
                 'Ready for your next step?',

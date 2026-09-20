@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../services/api_service.dart';
 import '../services/push_service.dart';
 import '../theme/app_colors.dart';
@@ -56,12 +57,12 @@ class _AccountTabState extends State<AccountTab> {
     SelectableText(value?.toString().isNotEmpty == true ? '$value' : 'Not provided'),
   ]));
   Widget _status(String title, bool complete) => ListTile(contentPadding: EdgeInsets.zero,
-    leading: Icon(complete ? Icons.check_circle_outline : Icons.radio_button_unchecked, color: complete ? AppColors.primary : AppColors.textMuted),
+    leading: HugeIcon(icon: complete ? HugeIcons.strokeRoundedCheckmarkCircle02 : HugeIcons.strokeRoundedCircle, color: complete ? AppColors.primary : AppColors.textMuted),
     title: Text(title), trailing: Text(complete ? 'Complete' : 'To do', style: TextStyle(color: complete ? AppColors.primary : AppColors.textMuted)),
   );
-  Widget _action(IconData icon, String title, String subtitle, VoidCallback action) => ListTile(
-    contentPadding: const EdgeInsets.symmetric(vertical: 4), leading: Icon(icon, color: AppColors.primary),
-    title: Text(title), subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right), onTap: action,
+  Widget _action(List<List<dynamic>> icon, String title, String subtitle, VoidCallback action) => ListTile(
+    contentPadding: const EdgeInsets.symmetric(vertical: 4), leading: HugeIcon(icon: icon, color: AppColors.primary),
+    title: Text(title), subtitle: Text(subtitle), trailing: const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, size: 18), onTap: action,
   );
   @override
   Widget build(BuildContext context) => RefreshIndicator(onRefresh: _load, child: ListView(
@@ -81,7 +82,7 @@ class _AccountTabState extends State<AccountTab> {
         _status('Mobile-money wallet', _profile!['walletVerified'] == true),
         OutlinedButton(onPressed: _verification, child: Text(_profile!['canApply'] == true ? 'Review verification details' : 'Complete verification')),
         const SizedBox(height: 20), const Divider(),
-        _action(Icons.badge_outlined, 'Personal details', 'View your registered information', () {
+        _action(HugeIcons.strokeRoundedIdVerified, 'Personal details', 'View your registered information', () {
           final data = _profile!['onboarding'] as Map<String, dynamic>? ?? {};
           _information('Personal details', [
             _text('Legal name', _profile!['fullName']), _text('Mobile number', _profile!['phone']),
@@ -90,19 +91,19 @@ class _AccountTabState extends State<AccountTab> {
           ]);
         }),
       ],
-      _action(Icons.lock_outline, 'Account security', 'Protect your password and wallet', () => _information('Account security', const [
+      _action(HugeIcons.strokeRoundedLock, 'Account security', 'Protect your password and wallet', () => _information('Account security', const [
         Text('Use a unique password and keep your verification codes private.', style: TextStyle(height: 1.6)),
         SizedBox(height: 16), Text('Enter your mobile-money PIN only in the prompt from your mobile-money provider. Never share it with another person.', style: TextStyle(height: 1.6)),
         SizedBox(height: 16), Text('Sign out when using a shared device.', style: TextStyle(height: 1.6)),
       ])),
-      _action(Icons.help_outline, 'Help', 'Applications, payments and verification', () => _information('Help', [
+      _action(HugeIcons.strokeRoundedHelpCircle, 'Help', 'Applications, payments and verification', () => _information('Help', [
         _text('Where is my application?', 'Open My loans to see its current status and details. Applications require credit-officer approval.'),
         _text('How do I repay?', 'Open Payments, choose an amount and request the mobile-money prompt. Refresh payment history after completing payment.'),
         _text('Where is my receipt?', 'Open a completed transaction in Payments. Pending and failed attempts are not receipts.'),
         _text('Why can’t I apply?', 'Complete identity, income and wallet verification in Account. An outstanding loan prevents another application.'),
       ])),
       const Divider(),
-      ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.logout, color: AppColors.error),
+      ListTile(contentPadding: EdgeInsets.zero, leading: const HugeIcon(icon: HugeIcons.strokeRoundedLogout01, color: AppColors.error),
         title: const Text('Sign out', style: TextStyle(color: AppColors.error)), onTap: _signOut),
       const SizedBox(height: 24),
       Center(
