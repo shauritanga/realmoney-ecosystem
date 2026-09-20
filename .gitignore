@@ -31,6 +31,10 @@ dist-ssr/
 **/.env.*
 !**/.env.example
 !**/.env*.example
+*service-account*.json
+**/*service-account*.json
+*-firebase-adminsdk-*.json
+**/*-firebase-adminsdk-*.json
 
 # Logs
 logs/

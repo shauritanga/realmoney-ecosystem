@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
+import '../services/sms_code_service.dart';
 
 class RegistrationScreen extends StatefulWidget {
   final Map<String, dynamic>? existingProfile;
-  const RegistrationScreen({super.key, this.existingProfile});
+  final SmsCodeService? smsCodeService;
+  const RegistrationScreen({super.key, this.existingProfile, this.smsCodeService});
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
@@ -18,8 +20,34 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   int _step = 0;
   bool _completed = false;
   final _scroll = ScrollController();
+  late final SmsCodeService _sms;
+  int _smsSession = 0;
+  String? _pendingSmsCode;
+
+  Future<void> _stopSms() async {
+    _smsSession++;
+    _pendingSmsCode = null;
+    try { await _sms.stop(); } catch (_) { /* Manual entry remains available. */ }
+  }
+
+  Future<void> _listenForSms(int session, String phone) async {
+    try {
+      final code = await _sms.listen();
+      if (!mounted || session != _smsSession ||
+          field('phone').text.trim() != phone || code == null) return;
+      if (_busy) {
+        _pendingSmsCode = code;
+      } else if (_step == 1 && field('code').text.isEmpty) {
+        field('code').text = code;
+      }
+    } catch (_) {
+      // Autofill is optional: manual entry remains available on every device.
+    }
+  }
+
 
   void _goTo(int step) {
+    if (_step == 1 && step != 1) _stopSms();
     FocusScope.of(context).unfocus();
     setState(() { _step = step; _error = null; });
     if (_scroll.hasClients) _scroll.jumpTo(0);
@@ -50,6 +78,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   @override
   void initState() {
     super.initState();
+    _sms = widget.smsCodeService ?? SmsCodeService();
     final profile = widget.existingProfile;
     if (profile != null) {
       final onboarding = profile['onboarding'] as Map<String, dynamic>? ?? {};
@@ -60,7 +89,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _loadLegal();
   }
   @override
-  void dispose() { _scroll.dispose(); _timer?.cancel(); for (final c in _fields.values) { c.dispose(); } super.dispose(); }
+  void dispose() { _stopSms(); _scroll.dispose(); _timer?.cancel(); for (final c in _fields.values) { c.dispose(); } super.dispose(); }
 
   Future<void> _loadLegal() async {
     setState(() { _loading = true; _error = null; });
@@ -79,11 +108,26 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
   Future<void> _sendCode() => _perform(() async {
     if (_step == 0 && !_form.currentState!.validate()) return;
-    final data = await ApiService.request('/auth/phone-code', method: 'POST', authenticated: false,
-      body: {'phone': field('phone').text.trim()});
+    await _stopSms();
+    if (!mounted) return;
+    final phone = field('phone').text.trim();
+    unawaited(_listenForSms(_smsSession, phone));
+    Map<String, dynamic> data;
+    try {
+      data = await ApiService.request('/auth/phone-code', method: 'POST', authenticated: false,
+        body: {'phone': phone});
+    } catch (_) {
+      _stopSms();
+      rethrow;
+    }
     if (!mounted) return;
     setState(() { _proof = null; _verifiedPhone = null; _developmentCode = data['developmentCode']; _resendSeconds = 60; _sentPhone = field('phone').text.trim(); field('code').clear(); });
     _goTo(1);
+    if (_pendingSmsCode != null) {
+      field('code').text = _pendingSmsCode!;
+      _pendingSmsCode = null;
+    }
+    if (_developmentCode != null) _stopSms();
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) { timer.cancel(); return; }
@@ -191,6 +235,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: _busy ? null : () => _goTo(0), child: Text(_existing ? 'Back to mobile number' : 'Change number'))),
               const SizedBox(height: 16),
               _input('code', '6-digit SMS code', keyboard: TextInputType.number),
+              const Padding(padding: EdgeInsets.only(bottom: 16), child: Text(
+                'Use the code suggested by your phone, or allow it to fill from your verification SMS. You can also enter it manually.',
+                style: TextStyle(color: AppColors.textMuted, height: 1.5))),
               if (_developmentCode != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: Text('Development code: $_developmentCode (no SMS sent)', style: const TextStyle(color: AppColors.warning))),
               TextButton(onPressed: _busy || _resendSeconds > 0 ? null : _sendCode,
                 child: Text(_resendSeconds > 0 ? 'Resend in $_resendSeconds seconds' : 'Resend code')),

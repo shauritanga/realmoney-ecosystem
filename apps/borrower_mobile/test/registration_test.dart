@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:borrower_mobile/services/sms_code_service.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
@@ -43,9 +46,54 @@ Future<void> capture(WidgetTester tester, String name) async {
   });
 }
 
+class FakeSmsCodeService extends SmsCodeService {
+  final code = Completer<String?>();
+  bool listening = false;
+  int stops = 0;
+  @override
+  Future<String?> listen() { listening = true; return code.future; }
+  @override
+  Future<void> stop() async { stops++; }
+}
+
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
-  tearDown(() { ApiService.client.close(); ApiService.client = http.Client(); });
+  setUp(() { SharedPreferences.setMockInitialValues({}); debugDefaultTargetPlatformOverride = TargetPlatform.linux; });
+  tearDown(() { debugDefaultTargetPlatformOverride = null; ApiService.client.close(); ApiService.client = http.Client(); });
+
+  for (final changeNumber in [false, true]) {
+    testWidgets('SMS consent fills code only for the active phone flow: change=$changeNumber', (tester) async {
+      final sms = FakeSmsCodeService();
+      String? verifiedCode;
+      ApiService.client = MockClient((request) async {
+        if (request.url.path.endsWith('/legal')) return http.Response(jsonEncode(legal), 200);
+        if (request.url.path.endsWith('/phone-code')) {
+          expect(sms.listening, isTrue);
+          return http.Response('{}', 201);
+        }
+        verifiedCode = jsonDecode(request.body)['code'];
+        return http.Response(jsonEncode({'phone': '+255712345678', 'phoneProof': 'proof'}), 201);
+      });
+      await tester.pumpWidget(MaterialApp(home: RegistrationScreen(smsCodeService: sms)));
+      await tester.pumpAndSettle();
+      await enter(tester, 'Mobile number', '0712345678');
+      await tapText(tester, 'Send verification code');
+      if (changeNumber) await tapText(tester, 'Change number');
+      sms.code.complete('654321');
+      await tester.pumpAndSettle();
+      if (changeNumber) {
+        await tapText(tester, 'Continue');
+        expect(tester.widget<TextFormField>(find.byKey(const ValueKey('code'))).controller!.text, isEmpty);
+        expect(verifiedCode, isNull);
+      } else {
+        expect(tester.widget<TextFormField>(find.byKey(const ValueKey('code'))).controller!.text, '654321');
+        await tapText(tester, 'Verify code');
+        expect(verifiedCode, '654321');
+        expect(find.text('Create a password'), findsOneWidget);
+      }
+      await tester.pumpWidget(const SizedBox());
+      expect(sms.stops, greaterThan(1));
+    });
+  }
 
   testWidgets('registration verifies phone, validates passwords, collects address and records separate consents', (tester) async {
     tester.view.physicalSize = const Size(800, 1400);

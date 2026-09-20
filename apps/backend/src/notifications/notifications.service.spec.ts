@@ -35,6 +35,8 @@ describe('push notification opt-outs', () => {
 
   it('skips sending when the borrower has no tokens without touching Firebase', async () => {
     delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    delete process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
     const { service, repo } = setup();
     await expect(service.sendToBorrower('borrower', 'Hi', 'Hello')).resolves.toEqual({ sent: 0 });
     expect(repo.find).toHaveBeenCalled();
@@ -42,6 +44,8 @@ describe('push notification opt-outs', () => {
 
   it('skips sending when Firebase is not configured', async () => {
     delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    delete process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
     const { service } = setup([{ borrowerId: 'borrower', token: 'fcm-token-1', platform: 'android' }]);
     await expect(service.sendToBorrower('borrower', 'Hi', 'Hello')).resolves.toEqual({ sent: 0 });
   });

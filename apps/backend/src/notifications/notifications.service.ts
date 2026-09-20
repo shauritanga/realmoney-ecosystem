@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -32,9 +33,24 @@ export class NotificationsService {
     if (this.admin) return this.admin;
     if (this.firebaseAttempted) return null;
     this.firebaseAttempted = true;
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    let raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    const filePath =
+      process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
+      process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (!raw && filePath && fs.existsSync(filePath)) {
+      try {
+        raw = fs.readFileSync(filePath, 'utf8');
+      } catch (err) {
+        this.logger.warn(
+          `Push notifications disabled: failed to read ${filePath} (${(err as Error).message})`,
+        );
+        return null;
+      }
+    }
     if (!raw) {
-      this.logger.warn('FIREBASE_SERVICE_ACCOUNT_JSON is not set; push notifications are disabled.');
+      this.logger.warn(
+        'Neither FIREBASE_SERVICE_ACCOUNT_JSON nor FIREBASE_SERVICE_ACCOUNT_PATH is set; push notifications are disabled.',
+      );
       return null;
     }
     try {
