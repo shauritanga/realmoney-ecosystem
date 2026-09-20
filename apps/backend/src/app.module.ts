@@ -8,6 +8,7 @@ import { SelcomModule } from './selcom/selcom.module.js';
 import { LoansModule } from './loans/loans.module.js';
 import { CollectionsModule } from './collections/collections.module.js';
 import { AdminModule } from './admin/admin.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AdminModule } from './admin/admin.module.js';
     LoansModule,
     CollectionsModule,
     AdminModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

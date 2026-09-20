@@ -11,6 +11,7 @@ import { LedgerEntry } from './entities/ledger-entry.entity.js';
 import { CollectorAssignment } from './entities/collector-assignment.entity.js';
 import { InteractionLog } from './entities/interaction-log.entity.js';
 import { PromiseToPay } from './entities/promise-to-pay.entity.js';
+import { DeviceToken } from '../notifications/device-token.entity.js';
 
 export const APP_ENTITIES = [
   PhoneChallenge, OnboardingRateLimit,
@@ -23,6 +24,7 @@ export const APP_ENTITIES = [
   CollectorAssignment,
   InteractionLog,
   PromiseToPay,
+  DeviceToken,
 ];
 
 @Module({

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/push_service.dart';
 import '../theme/app_colors.dart';
 import 'login_screen.dart';
 import 'onboarding_screen.dart';
@@ -39,6 +40,7 @@ class _AccountTabState extends State<AccountTab> {
         FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sign out'))],
     ));
     if (confirmed != true) return;
+    await PushService.onSignedOut();
     await ApiService.clearToken();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);

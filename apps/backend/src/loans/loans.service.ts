@@ -1,6 +1,7 @@
 import { OnboardingService } from '../onboarding/onboarding.service.js';
 import { SettingsService } from '../settings/settings.service.js';
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { SelcomService } from '../selcom/selcom.service.js';
@@ -23,7 +24,16 @@ export class LoansService {
     private readonly selcomService: SelcomService,
     private readonly settings: SettingsService,
     private readonly onboarding: OnboardingService,
+    @Optional() private readonly notifications?: NotificationsService,
   ) {}
+
+  private async notifyBorrower(borrowerId: string, title: string, body: string, data: Record<string, string>) {
+    try {
+      await this.notifications?.sendToBorrower(borrowerId, title, body, data);
+    } catch {
+      // Push is best-effort and must never fail the loan flow.
+    }
+  }
 
   async getProducts() {
     const [products, settings] = await Promise.all([
@@ -201,6 +211,12 @@ export class LoansService {
       { id: loanId },
       { status: LoanStatus.APPROVED, approvedBy: adminId, approvedAt: new Date() },
     );
+    void this.notifyBorrower(
+      loan.borrowerId,
+      'Loan approved',
+      `Your loan ${loan.loanNumber} of TZS ${Number(loan.principalAmount)} was approved. The payout is on its way.`,
+      { loanId: loan.id, type: 'loan_approved' },
+    );
     return this.loans.findOneBy({ id: loanId });
   }
 
@@ -224,6 +240,13 @@ export class LoansService {
     const now = new Date();
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + loan.tenureDays);
+
+    void this.notifyBorrower(
+      loan.borrowerId,
+      'Money sent',
+      `TZS ${Number(loan.principalAmount)} sent to ${loan.borrower.phone}. Repay TZS ${Number(loan.outstandingBalance)} by ${dueDate.toISOString().slice(0, 10)}.`,
+      { loanId: loan.id, type: 'loan_disbursed' },
+    );
 
     // Double-entry bookkeeping (atomic):
     // Debit: LOAN_RECEIVABLE (Company asset increases)

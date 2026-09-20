@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'services/api_service.dart';
+import 'services/push_service.dart';
 import 'theme/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await PushService.init();
   final token = await ApiService.getToken();
   runApp(RealMoneyBorrowerApp(isLoggedIn: token != null));
 }

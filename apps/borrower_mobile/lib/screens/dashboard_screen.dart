@@ -3,6 +3,7 @@ import 'onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import '../services/push_service.dart';
 import 'loan_apply_screen.dart';
 import 'account_tab.dart';
 
@@ -33,6 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    PushService.onAuthenticated();
     _loadLoans();
   }
 
@@ -54,6 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             double.tryParse(active['outstandingBalance'].toString()) ?? 0;
         _payController.text = outstanding.toStringAsFixed(0);
       }
+      _syncDueReminders();
     } catch (e) {
       if (!mounted) return;
       setState(() { _isLoading = false; _currentLimit = null; _loadError = 'Unable to refresh your loans. Check your connection and retry.'; });
@@ -69,6 +72,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Keeps the on-device repayment reminders aligned with the payable loan.
+  void _syncDueReminders() {
+    final active = _payableLoan;
+    if (active == null) {
+      PushService.cancelReminders();
+      return;
+    }
+    final due = DateTime.tryParse('${active['dueDate']}')?.toLocal();
+    if (due == null) return;
+    PushService.scheduleDueReminders(
+      dueDate: due,
+      outstanding:
+          double.tryParse(active['outstandingBalance'].toString()) ?? 0,
+      loanNumber: '${active['loanNumber']}',
+    );
   }
 
   /// Loans waiting on the credit-officer pipeline.

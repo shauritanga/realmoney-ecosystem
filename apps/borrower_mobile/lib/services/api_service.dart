@@ -90,6 +90,30 @@ class ApiService {
 
   static Future<Map<String, dynamic>> fetchBorrowingLimit() => request('/loans/my-limit');
 
+  /// Uploads the FCM device token so the backend can push loan updates.
+  /// Best-effort: never throws.
+  static Future<void> registerPushToken(String token) async {
+    try {
+      await request('/notifications/token',
+          method: 'POST', body: {'token': token, 'platform': 'android'});
+    } catch (_) {}
+  }
+
+  /// Removes the FCM device token on logout. Best-effort: never throws.
+  static Future<void> unregisterPushToken(String token) async {
+    try {
+      final authToken = await getToken();
+      await client
+          .delete(Uri.parse('$baseUrl/notifications/token'),
+              headers: {
+                'Authorization': 'Bearer $authToken',
+                'Content-Type': 'application/json',
+              },
+              body: jsonEncode({'token': token}))
+          .timeout(const Duration(seconds: 30));
+    } catch (_) {}
+  }
+
   static Future<List<dynamic>> fetchMyLoans() async {
     final token = await getToken();
     final response = await client.get(Uri.parse('$baseUrl/loans/my-loans'),
