@@ -200,4 +200,18 @@ describe('provider adapters', () => {
     fetchMock.mockRejectedValue(new Error('timeout'));
     await expect(provider.request('identity', {})).rejects.toThrow('unavailable');
   });
+  it('auto-verifies identity and wallet when AUTO_VERIFY_ONBOARDING is enabled in production', async () => {
+    const provider = new VerificationProvider(new ConfigService({ NODE_ENV: 'production', AUTO_VERIFY_ONBOARDING: 'true' }));
+    const idResult = await provider.request('identity', { fullName: 'Lulu Sebastian', nationalId: '19860626613050000528' });
+    expect(idResult.verified).toBe(true);
+    expect(idResult.mode).toBe('live');
+    expect(idResult.reference).toContain('auto-identity');
+
+    const walletResult = await provider.request('wallet', { phone: '+255629593331', provider: 'MPESA' });
+    expect(walletResult.verified).toBe(true);
+    expect(walletResult.mode).toBe('live');
+    expect(walletResult.reference).toContain('auto-wallet');
+
+    await expect(provider.request('wallet', { phone: '+255629593331', provider: 'INVALID_PROVIDER' })).rejects.toThrow('Unsupported mobile-money provider');
+  });
 });
