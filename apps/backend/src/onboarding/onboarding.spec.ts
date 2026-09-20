@@ -154,6 +154,13 @@ describe('registration and pre-loan checks', () => {
     const config = new ConfigService({ NODE_ENV: 'production', ACCOUNT_TERMS_TEXT: 'text', PRIVACY_NOTICE_TEXT: 'text' });
     expect(() => new LegalService(config, new VerificationProvider(config)).getDocuments()).toThrow('not configured');
   });
+  it('serves legal documents when review is approved', () => {
+    const config = new ConfigService({ NODE_ENV: 'production', LEGAL_REVIEW_APPROVED: 'true' });
+    const docs = new LegalService(config, new VerificationProvider(config)).getDocuments();
+    expect(docs.draft).toBe(false);
+    expect(docs.terms.text).toContain('RealMoney');
+    expect(docs.privacy.text).toContain('RealMoney');
+  });
 });
 
 describe('provider adapters', () => {

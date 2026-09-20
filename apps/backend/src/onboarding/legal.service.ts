@@ -8,14 +8,14 @@ import { VerificationProvider } from './verification-provider.service.js';
 export class LegalService {
   constructor(private readonly config: ConfigService, private readonly provider: VerificationProvider) {}
   getDocuments() {
-    let terms = this.config.get<string>('ACCOUNT_TERMS_TEXT');
-    let privacy = this.config.get<string>('PRIVACY_NOTICE_TEXT');
-    const draft = !terms || !privacy || this.config.get('LEGAL_REVIEW_APPROVED') !== 'true';
+    let terms = this.config.get<string>('ACCOUNT_TERMS_TEXT') || ACCOUNT_TERMS_DRAFT;
+    let privacy = this.config.get<string>('PRIVACY_NOTICE_TEXT') || PRIVACY_NOTICE_DRAFT;
+    const isApproved = this.config.get('LEGAL_REVIEW_APPROVED') === 'true';
+    const draft = !isApproved;
     if (draft && !this.provider.development) {
       throw new ServiceUnavailableException('Account terms and privacy notice are not configured. Please try again later.');
     }
-    if (draft) { terms = ACCOUNT_TERMS_DRAFT; privacy = PRIVACY_NOTICE_DRAFT; }
     const document = (text: string) => ({ text, version: createHash('sha256').update(text).digest('hex') });
-    return { terms: document(terms!), privacy: document(privacy!), draft };
+    return { terms: document(terms), privacy: document(privacy), draft };
   }
 }
