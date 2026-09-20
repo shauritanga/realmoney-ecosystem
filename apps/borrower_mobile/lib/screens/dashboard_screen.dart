@@ -22,6 +22,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _tab = 0;
   String? _loadError;
   String? _borrowerName;
+  bool _canApply = false;
   final _scrollControllers = List.generate(3, (_) => ScrollController());
   bool _isLoading = true;
   double? _currentLimit;
@@ -50,7 +51,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final profile = await ApiService.request('/onboarding');
       if (!mounted) return;
       final name = profile['fullName']?.toString().trim();
-      setState(() => _borrowerName = (name == null || name.isEmpty) ? null : name);
+      setState(() {
+        _borrowerName = (name == null || name.isEmpty) ? null : name;
+        _canApply = profile['canApply'] == true;
+      });
     } catch (_) {}
   }
 
@@ -769,9 +773,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: _currentLimit == null ? null : () async {
-              final ready = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const OnboardingScreen()));
-              if (!mounted || ready != true) return;
-              if (!context.mounted) return;
+              if (!_canApply) {
+                try {
+                  final profile = await ApiService.request('/onboarding');
+                  _canApply = profile['canApply'] == true;
+                } catch (_) {}
+              }
+              if (!_canApply) {
+                if (!mounted) return;
+                final ready = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                );
+                if (!mounted || ready != true) return;
+                _canApply = true;
+              }
+              if (!mounted || !context.mounted) return;
               final res = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const LoanApplyScreen()),
@@ -779,6 +796,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (res == true) {
                 _payController.clear();
                 _loadLoans();
+                _loadProfile();
               }
             },
             style: ElevatedButton.styleFrom(
