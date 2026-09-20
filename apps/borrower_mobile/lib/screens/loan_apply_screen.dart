@@ -69,8 +69,41 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
 
   double get _fee {
     if (_selectedProduct == null) return 0;
-    final rate = (double.tryParse(_selectedProduct['processingFeeRate'].toString()) ?? 2.5) / 100;
-    return _amount * rate;
+    final rate = _realMoneyProcessingRate / 100;
+    return (((_amount * rate) + _clickPesaPayoutFee) / 50).ceil() * 50;
+  }
+
+  double get _realMoneyProcessingRate {
+    if (_amount < 50000) return 3.0;
+    if (_amount < 200000) return 2.75;
+    if (_amount < 500000) return 2.5;
+    return 2.25;
+  }
+
+  double get _clickPesaPayoutFee {
+    if (_amount <= 999) return 52;
+    if (_amount <= 1999) return 72;
+    if (_amount <= 2999) return 104;
+    if (_amount <= 3999) return 116;
+    if (_amount <= 4999) return 168;
+    if (_amount <= 6999) return 234;
+    if (_amount <= 7999) return 360;
+    if (_amount <= 9999) return 430;
+    if (_amount <= 14999) return 642;
+    if (_amount <= 19999) return 680;
+    if (_amount <= 29999) return 700;
+    if (_amount <= 39999) return 980;
+    if (_amount <= 49999) return 1038;
+    if (_amount <= 99999) return 1460;
+    if (_amount <= 199999) return 1868;
+    if (_amount <= 299999) return 2220;
+    if (_amount <= 399999) return 3180;
+    if (_amount <= 499999) return 3764;
+    if (_amount <= 599999) return 4672;
+    if (_amount <= 699999) return 5712;
+    if (_amount <= 799999) return 6560;
+    if (_amount <= 899999) return 7800;
+    return 8508;
   }
 
   double get _totalDue => _amount + _interest + _fee;
@@ -158,7 +191,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
     }
 
     final minAmt = _selectedProduct != null
-        ? double.tryParse(_selectedProduct['minAmount'].toString()) ?? 20000
+        ? double.tryParse(_selectedProduct['minAmount'].toString()) ?? 8000
         : 20000.0;
     final maxAmt = _selectedProduct != null
         ? double.tryParse(_selectedProduct['maxAmount'].toString()) ?? 200000
@@ -200,7 +233,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                   onChanged: (val) {
                     setState(() {
                       _selectedProduct = val;
-                      _amount = double.tryParse(_selectedProduct['minAmount'].toString()) ?? 20000;
+                      _amount = double.tryParse(_selectedProduct['minAmount'].toString()) ?? 8000;
                       _syncTenure();
                     });
                   },

@@ -65,7 +65,8 @@ describe('application limit enforcement', () => {
     const { service } = setup();
     const loan = await service.applyForLoan('borrower', { productId: 'product', principalAmount: 10000, tenureDays: 7 });
     expect(loan.interestAmount).toBe(4000);
-    expect(loan.totalAmount).toBe(10000 + 4000 + 200);
+    expect(loan.processingFee).toBe(950);
+    expect(loan.totalAmount).toBe(10000 + 4000 + 950);
   });
   it('accepts the exact earned allowance', async () => {
     const { service } = setup();

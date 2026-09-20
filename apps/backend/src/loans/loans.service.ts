@@ -10,6 +10,7 @@ import { Loan } from '../database/entities/loan.entity.js';
 import { LoanProduct } from '../database/entities/loan-product.entity.js';
 import { LedgerEntry } from '../database/entities/ledger-entry.entity.js';
 import { borrowingLimit } from './borrowing-limit.js';
+import { totalProcessingFee } from '../clickpesa/clickpesa-fees.js';
 
 @Injectable()
 export class LoansService {
@@ -173,7 +174,7 @@ export class LoansService {
     const { interestRateMonthly } = await this.settings.get();
     const weeklyRate = interestRateMonthly / 100;
     const interest = Math.round(dto.principalAmount * weeklyRate * (dto.tenureDays / 7));
-    const fee = Math.round(dto.principalAmount * (Number(product.processingFeeRate) / 100));
+    const fee = totalProcessingFee(dto.principalAmount);
     const totalPayable = dto.principalAmount + interest + fee;
 
     const loanCount = await this.loans.count();

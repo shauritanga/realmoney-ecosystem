@@ -4,6 +4,24 @@ Borrower and assigned-collector repayments use ClickPesa mobile-money USSD push.
 Loan disbursements also use ClickPesa mobile-money payouts. Selcom remains only for
 the legacy wallet-name verification path and historical ledger entries.
 
+## Loan processing fee
+
+New loan processing fees are calculated as:
+
+```text
+amount-based RealMoney percentage fee + ClickPesa payout fee
+```
+
+The result is rounded up to the nearest TZS 50. For example, an TZS 8,000 loan on
+the 3% small-loan rate has a TZS 240 RealMoney fee plus the TZS 430 ClickPesa
+payout fee, resulting in a displayed processing fee of TZS 700. RealMoney's rates
+are 3% below TZS 50,000, 2.75% from TZS 50,000 to 199,999, 2.5% from TZS 200,000
+to 499,999, and 2.25% from TZS 500,000 upward. This fee is stored
+in the loan balance before approval, so the mobile quote and backend repayment total
+use the same amount. The fee table is maintained in
+`apps/backend/src/clickpesa/clickpesa-fees.ts` and should be reviewed if ClickPesa
+changes its published pricing.
+
 ## Configuration
 
 Keep these values in `apps/backend/.env` or your deployment secret manager:
@@ -25,7 +43,8 @@ endpoint to prevent accidentally sending credentials to another host.
 
 For `TYPEORM_SYNC=false`, apply
 `apps/backend/src/database/migrations/20260922-clickpesa-repayments.sql`, followed by
-`apps/backend/src/database/migrations/20260923-clickpesa-webhook-events.sql`, before
+`apps/backend/src/database/migrations/20260923-clickpesa-webhook-events.sql` and
+`apps/backend/src/database/migrations/20260924-quick-cash-minimum-8000.sql`, before
 starting the updated backend. It adds provider reference columns and enum values
 without rewriting historical Selcom records. Development schema synchronization
 also discovers these additions.
