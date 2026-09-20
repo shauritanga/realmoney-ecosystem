@@ -1,0 +1,81 @@
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  COLLECTOR = 'COLLECTOR',
+  BORROWER = 'BORROWER',
+}
+
+export enum KycStatus {
+  PENDING = 'PENDING',
+  VERIFIED = 'VERIFIED',
+  REJECTED = 'REJECTED',
+}
+
+export enum LoanStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  DISBURSED = 'DISBURSED',
+  ACTIVE = 'ACTIVE',
+  OVERDUE = 'OVERDUE',
+  DEFAULTED = 'DEFAULTED',
+  SETTLED = 'SETTLED',
+}
+
+export enum AgingBucket {
+  CURRENT = 'CURRENT',
+  D1_7 = 'D1_7',
+  D8_30 = 'D8_30',
+  D31_60 = 'D31_60',
+  D60_PLUS = 'D60_PLUS',
+}
+
+export enum RepaymentChannel {
+  SELCOM_USSD_PUSH = 'SELCOM_USSD_PUSH',
+  SELCOM_PAYBILL = 'SELCOM_PAYBILL',
+  CASH = 'CASH',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+}
+
+export enum RepaymentStatus {
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+}
+
+export enum CommunicationChannel {
+  CALL = 'CALL',
+  WHATSAPP = 'WHATSAPP',
+  SMS = 'SMS',
+}
+
+export enum DispositionCode {
+  PROMISED_TO_PAY = 'PROMISED_TO_PAY',
+  CALLBACK_REQUESTED = 'CALLBACK_REQUESTED',
+  DISPUTED = 'DISPUTED',
+  REFUSED_TO_PAY = 'REFUSED_TO_PAY',
+  UNREACHABLE = 'UNREACHABLE',
+  WRONG_NUMBER = 'WRONG_NUMBER',
+  PAID = 'PAID',
+}
+
+export enum PtpStatus {
+  PENDING = 'PENDING',
+  HONORED = 'HONORED',
+  BROKEN = 'BROKEN',
+}
+
+export enum AccountType {
+  LOAN_RECEIVABLE = 'LOAN_RECEIVABLE',
+  CASH_SELCOM = 'CASH_SELCOM',
+  INTEREST_INCOME = 'INTEREST_INCOME',
+  PENALTY_INCOME = 'PENALTY_INCOME',
+  FEE_INCOME = 'FEE_INCOME',
+}
+
+export enum EntryType {
+  DISBURSEMENT = 'DISBURSEMENT',
+  REPAYMENT = 'REPAYMENT',
+  INTEREST_ACCRUAL = 'INTEREST_ACCRUAL',
+  PENALTY_ACCRUAL = 'PENALTY_ACCRUAL',
+  FEE = 'FEE',
+}

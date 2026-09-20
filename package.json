@@ -1,0 +1,9 @@
+{
+  "name": "realmoney-ecosystem",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:api": "ONBOARDING_DEV_MODE=true npm --prefix apps/backend run start:dev",
+    "dev:web": "npm --prefix apps/admin-web run dev"
+  }
+}

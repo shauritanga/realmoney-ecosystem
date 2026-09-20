@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production / Build outputs
+dist/
+**/dist/
+dist-ssr/
+**/dist-ssr/
+
+# Flutter / Dart build artifacts
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/ios/Flutter/.last_build_id
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/.widget_preview/
+
+# Environment and secrets
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env*.example
+
+# Logs
+logs/
+*.log
+**/*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Test coverage
+coverage/
+**/coverage/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+**/.idea/
+.vscode/*
+!.vscode/extensions.json
+*.iml
+*.ipr
+*.iws
+*.swp
+*.sw?
+
+# Local tooling & agents
+.codex/
+.gemini/
