@@ -460,7 +460,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _detail('Loan', '${payment['loanNumber']}'),
     _detail(payment['status'] == 'COMPLETED' ? 'Paid on' : 'Requested on', _date(payment['paidAt'] ?? payment['createdAt'])),
     _detail('Payment method', _status(payment['channel'])),
-    _detail('Transaction reference', '${payment['providerTransId'] ?? payment['providerReference'] ?? payment['selcomTransId'] ?? payment['selcomReference'] ?? payment['id']}'),
+    _detail('Transaction reference', '${payment['providerTransId'] ?? payment['providerReference'] ?? payment['id']}'),
     if (payment['status'] != 'COMPLETED') const Text('This is not a receipt. The payment has not been confirmed.', style: TextStyle(color: AppColors.warning)),
   ]);
 

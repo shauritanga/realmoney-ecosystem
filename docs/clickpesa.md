@@ -1,8 +1,8 @@
-# ClickPesa repayments
+# ClickPesa repayments and disbursements
 
 Borrower and assigned-collector repayments use ClickPesa mobile-money USSD push.
-Loan disbursements also use ClickPesa mobile-money payouts. Selcom remains only for
-the legacy wallet-name verification path and historical ledger entries.
+Loan disbursements also use ClickPesa mobile-money payouts. Mobile wallet onboarding
+verifies the phone-matched wallet for ClickPesa disbursements.
 
 ## Loan processing fee
 

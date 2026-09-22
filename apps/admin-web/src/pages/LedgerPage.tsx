@@ -7,7 +7,7 @@ import type { LedgerEntry } from '../types';
 
 export function LedgerPage() {
   const { ledger, loading } = useDashboardData();
-  const accountLabel = (account: string) => account === 'CASH_CLICKPESA' ? 'CASH_CLICKPESA' : account === 'CASH_SELCOM' ? 'CASH_SELCOM (legacy)' : account;
+  const accountLabel = (account: string) => account;
 
   if (ledger.length === 0 && loading) {
     return <LoadingState />;

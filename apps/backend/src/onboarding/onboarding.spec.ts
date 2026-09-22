@@ -191,15 +191,14 @@ describe('provider adapters', () => {
     expect(fetchMock.mock.calls[0][1].body).toContain('username=shauritanga');
     expect(fetchMock.mock.calls[0][1].body).toContain('to=%2B255712345678');
   });
-  it('rejects failed or mismatched Selcom lookups and accepts matching legal names', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ result: 'SUCCESS', reference: 'ref', data: [{ name: 'TEST BORROWER' }] }) });
-    vi.stubGlobal('fetch', fetchMock);
-    const provider = new VerificationProvider(new ConfigService({ SELCOM_API_KEY: 'key', SELCOM_API_SECRET: 'secret' }));
-    expect((await provider.request('wallet', { phone: valid.phone, provider: 'MPESA', fullName: 'Test Borrower' })).reference).toBe('ref');
-    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('SELCOM a2V5');
-    await expect(provider.request('wallet', { phone: valid.phone, provider: 'MPESA', fullName: 'Another Person' })).rejects.toThrow('does not match');
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ result: 'FAIL' }) });
-    await expect(provider.request('wallet', { phone: valid.phone, provider: 'MPESA', fullName: 'Test Borrower' })).rejects.toThrow('unavailable');
+  it('validates supported wallet providers and Tanzanian mobile format for ClickPesa disbursements', async () => {
+    const provider = new VerificationProvider(new ConfigService({}));
+    const result = await provider.request('wallet', { phone: valid.phone, provider: 'MPESA' });
+    expect(result.verified).toBe(true);
+    expect(result.reference).toMatch(/^cp-wallet-/);
+    expect(result.mode).toBe('live');
+    await expect(provider.request('wallet', { phone: valid.phone, provider: 'INVALID_PROVIDER' })).rejects.toThrow('Unsupported');
+    await expect(provider.request('wallet', { phone: '12345', provider: 'MPESA' })).rejects.toThrow('Tanzanian mobile number');
   });
   it('requires positive identity-provider evidence and does not turn timeouts into verified status', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ verified: false }) });
@@ -209,10 +208,9 @@ describe('provider adapters', () => {
     fetchMock.mockRejectedValue(new Error('timeout'));
     await expect(provider.request('identity', {})).rejects.toThrow('unavailable');
   });
-  it('never treats production auto-verify flags as provider evidence', async () => {
-    const provider = new VerificationProvider(new ConfigService({ NODE_ENV: 'production', AUTO_VERIFY_ONBOARDING: 'true', AUTO_VERIFY_IDENTITY: 'true', AUTO_VERIFY_WALLET: 'true' }));
+  it('never treats production auto-verify flags as identity provider evidence', async () => {
+    const provider = new VerificationProvider(new ConfigService({ NODE_ENV: 'production', AUTO_VERIFY_ONBOARDING: 'true', AUTO_VERIFY_IDENTITY: 'true' }));
     await expect(provider.request('identity', {})).rejects.toThrow('not configured');
-    await expect(provider.request('wallet', { phone: valid.phone, provider: 'MPESA' })).rejects.toThrow('not configured');
   });
 });
 

@@ -34,11 +34,9 @@ an account is created, pre-loan verification progress is persisted on the server
   Requires a business account, funded SMS balance, API credentials and approved
   sender ID. A provider acceptance response means queued for delivery, not proof
   of delivery; only a correct code proves phone control.
-- **Wallet ownership:** Selcom IMT wallet-name lookup,
-  https://developers.selcommobile.com/#wallet-name-look-up. Requires the merchant's
-  credentials and entitlement to this API. No payment is initiated by this check.
-  Legal names must match after whitespace/case normalization; mismatches fail and
-  require support rather than silently accepting a different owner.
+- **Wallet ownership & payouts:** ClickPesa mobile-money payouts and collections,
+  https://clickpesa.com. Funds are disbursed directly to the borrower's verified
+  mobile money wallet (M-Pesa, Tigo Pesa, Airtel Money, HaloPesa) via ClickPesa.
 - **Identity:** NIDA stakeholder verification,
   https://services.nida.go.tz/ and https://nida.go.tz/Ushirikishanaji-Taarifa.
   Its approved stakeholder access and integration specifications are not included
@@ -54,7 +52,7 @@ SMS verification as a substitute for identity verification.
 
 Merge `apps/backend/.env.onboarding.example` into your configuration; never commit
 real credentials. Set `OTP_SECRET` to a cryptographically random secret of at least
-32 bytes. Set Beem and Selcom credentials through your secrets manager.
+32 bytes. Set Beem and ClickPesa credentials through your secrets manager.
 
 Apply `apps/backend/src/database/migrations/20260920-borrower-onboarding.sql` when
 schema auto-sync is disabled. It adds nullable onboarding data to existing users

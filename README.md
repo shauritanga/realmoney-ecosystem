@@ -1,6 +1,6 @@
 # realMoney Fintech Ecosystem: Digital Lending & Debt Collection Suite
 
-A production-ready digital lending and debt recovery platform designed for the East African market (integrated with Selcom Tanzania for M-Pesa, Tigo Pesa, Airtel Money, and HaloPesa).
+A production-ready digital lending and debt recovery platform designed for the East African market (integrated with ClickPesa Tanzania for M-Pesa, Tigo Pesa, Airtel Money, and HaloPesa).
 
 ---
 
@@ -9,7 +9,7 @@ A production-ready digital lending and debt recovery platform designed for the E
 ```
 realmoney-ecosystem/
 ├── apps/
-│   ├── backend/             # NestJS API + PostgreSQL + Selcom Gateway
+│   ├── backend/             # NestJS API + PostgreSQL + ClickPesa Gateway
 │   ├── admin-web/           # React + Vite + Tailwind Admin Operations Dashboard
 │   ├── collector_mobile/    # Flutter Mobile App for Office Debt Recovery Agents
 │   └── borrower_mobile/     # Flutter Mobile App for Public Loan Customers
@@ -80,7 +80,7 @@ flutter run -d linux   # or -d chrome, or -d android
 * **Features**:
   * Interactive loan slider and product selection.
   * Digital loan application and status tracking.
-  * 1-tap Selcom USSD push self-repayment.
+  * 1-tap ClickPesa USSD push self-repayment.
 
 ### Borrower limit policy
 
@@ -100,7 +100,7 @@ the timestamp recorded when the payment callback is processed.
 
 ---
 
-## 💳 Selcom Payment Gateway Workflows
+## 💳 ClickPesa Payment Gateway Workflows
 
 1. **C2B USSD Push (Collection & Repayment)**:
    * Triggers an interactive USSD pop-up directly to borrower's mobile handset requesting M-Pesa / Tigo / Airtel PIN.
@@ -109,8 +109,8 @@ the timestamp recorded when the payment callback is processed.
    * Instant wallet payout when credit officer approves loan.
    * `POST /api/v1/loans/:id/disburse`
 3. **Webhook Callback**:
-   * Cryptographically validated webhook listener with atomic double-entry bookkeeping (`CASH_SELCOM` debit, `LOAN_RECEIVABLE` credit).
-   * `POST /api/v1/selcom/webhook`
+   * Cryptographically validated webhook listener with atomic double-entry bookkeeping (`CASH_CLICKPESA` debit, `LOAN_RECEIVABLE` credit).
+   * `POST /api/v1/webhooks/clickpesa`
 
 ### Admin interest settings
 

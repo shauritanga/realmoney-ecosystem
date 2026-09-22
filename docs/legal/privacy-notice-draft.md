@@ -22,7 +22,7 @@ or account details to the configured verification providers. Development-mode
 checks are simulations, not real identity verification.
 
 The proposed integrations are Beem for SMS, an approved NIDA stakeholder adapter
-for identity, and Selcom for wallet-name lookup. The operator must confirm the
+for identity, and ClickPesa for mobile wallet disbursements and collections. The operator must confirm the
 actual providers, processing arrangements, recipients, locations and legal bases
 before publishing a live notice.
 

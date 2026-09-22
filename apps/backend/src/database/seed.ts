@@ -231,7 +231,7 @@ async function main() {
       collectorId: collector1.id,
       channel: CommunicationChannel.CALL,
       disposition: DispositionCode.PROMISED_TO_PAY,
-      notes: 'Customer promised to pay 40,000 TZS by tomorrow noon via Selcom USSD.',
+      notes: 'Customer promised to pay 40,000 TZS by tomorrow noon via ClickPesa USSD.',
       durationSeconds: 145,
     }),
   );
