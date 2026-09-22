@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+
 import '../services/api_service.dart';
 import '../theme/app_colors.dart';
 import 'registration_screen.dart';
+import 'identity_verification_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final bool forApplication;
@@ -86,15 +88,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _submitFinancial() async {
     if (!_form.currentState!.validate()) return;
     await _perform(() async {
-      await ApiService.request('/onboarding/financial', method: 'PUT', body: {
-        'employmentStatus': _employment,
-        'occupation': _occupation.text.trim(),
-        'monthlyIncome': double.parse(_income.text),
-        'essentialExpenses': double.parse(_expenses.text),
-        'existingLoanRepayments': double.parse(_debts.text),
-        'walletPhone': _profile!['phone'],
-        'walletProvider': _wallet,
-      });
+      await ApiService.request(
+        '/onboarding/financial',
+        method: 'PUT',
+        body: {
+          'employmentStatus': _employment,
+          'occupation': _occupation.text.trim(),
+          'monthlyIncome': double.parse(_income.text),
+          'essentialExpenses': double.parse(_expenses.text),
+          'existingLoanRepayments': double.parse(_debts.text),
+          'walletPhone': _profile!['phone'],
+          'walletProvider': _wallet,
+        },
+      );
     });
   }
 
@@ -111,7 +117,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     int completed = 0;
     if (_profile!['registrationComplete'] == true) completed++;
     if (_profile!['identityVerified'] == true) completed++;
-    if (_profile!['financialComplete'] == true && _profile!['walletVerified'] == true) completed++;
+    if (_profile!['financialComplete'] == true &&
+        _profile!['walletVerified'] == true) {
+      completed++;
+    }
     return completed / 3.0;
   }
 
@@ -120,7 +129,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     int count = 0;
     if (_profile!['registrationComplete'] == true) count++;
     if (_profile!['identityVerified'] == true) count++;
-    if (_profile!['financialComplete'] == true && _profile!['walletVerified'] == true) count++;
+    if (_profile!['financialComplete'] == true &&
+        _profile!['walletVerified'] == true) {
+      count++;
+    }
     return count;
   }
 
@@ -158,9 +170,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: canApply ? AppColors.successTint : AppColors.surfaceMuted,
+                  color: canApply
+                      ? AppColors.successTint
+                      : AppColors.surfaceMuted,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -191,7 +208,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             canApply
                 ? 'All verifications are completed. You can now apply for a loan.'
                 : 'Complete all steps below to unlock borrowing up to your limit.',
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.4),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textMuted,
+              height: 1.4,
+            ),
           ),
           if (_profile?['development'] == true) ...[
             const SizedBox(height: 10),
@@ -203,7 +224,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               child: const Row(
                 children: [
-                  HugeIcon(icon: HugeIcons.strokeRoundedAlertCircle, color: AppColors.warning, size: 16),
+                  HugeIcon(
+                    icon: HugeIcons.strokeRoundedAlertCircle,
+                    color: AppColors.warning,
+                    size: 16,
+                  ),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -290,9 +315,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: isComplete ? AppColors.successTint : AppColors.surfaceMuted,
+                    color: isComplete
+                        ? AppColors.successTint
+                        : AppColors.surfaceMuted,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -302,7 +332,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         icon: isComplete
                             ? HugeIcons.strokeRoundedCheckmarkCircle02
                             : HugeIcons.strokeRoundedClock01,
-                        color: isComplete ? AppColors.primary : AppColors.textMuted,
+                        color: isComplete
+                            ? AppColors.primary
+                            : AppColors.textMuted,
                         size: 14,
                       ),
                       const SizedBox(width: 4),
@@ -311,7 +343,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: isComplete ? AppColors.primary : AppColors.textMuted,
+                          color: isComplete
+                              ? AppColors.primary
+                              : AppColors.textMuted,
                         ),
                       ),
                     ],
@@ -321,10 +355,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
           const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(18),
-            child: child,
-          ),
+          Padding(padding: const EdgeInsets.all(18), child: child),
         ],
       ),
     );
@@ -334,32 +365,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final details = _profile?['onboarding'] as Map<String, dynamic>? ?? {};
     final isRegDone = _profile?['registrationComplete'] == true;
     final isIdDone = _profile?['identityVerified'] == true;
-    final addressParts = [
-      details['street'],
-      details['ward'],
-      details['district'],
-      details['region'],
-    ].whereType<String>().where((v) => v.trim().isNotEmpty).toList();
 
     return _buildSectionCard(
       icon: HugeIcons.strokeRoundedIdVerified,
-      title: 'Identity & Personal Details',
-      subtitle: 'National ID & registered address',
+      title: 'Document & live selfie',
+      subtitle: 'Document authenticity, liveness and face match',
       isComplete: isIdDone,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _infoRow('Legal full name', _profile?['fullName'] ?? 'Not provided'),
+          _infoRow(switch (details['identityType']) {
+            'VOTER_ID' => 'Voter ID document',
+            'DRIVING_LICENSE' => 'Driving licence document',
+            'PASSPORT' => 'Passport document',
+            _ => 'NIDA document',
+          }, _maskNationalId(_profile?['nationalId'])),
           const SizedBox(height: 10),
-          _infoRow(
-            '${details['identityType'] ?? 'NIDA'} document',
-            _maskNationalId(_profile?['nationalId']),
-          ),
-          const SizedBox(height: 10),
-          _infoRow(
-            'Residential location',
-            addressParts.isNotEmpty ? addressParts.join(', ') : 'Not provided',
-          ),
+          if (isIdDone) const Text('Document and live selfie verified.'),
           const SizedBox(height: 16),
           if (!isRegDone)
             OutlinedButton.icon(
@@ -369,16 +391,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       final updated = await Navigator.push<bool>(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => RegistrationScreen(existingProfile: _profile),
+                          builder: (_) =>
+                              RegistrationScreen(existingProfile: _profile),
                         ),
                       );
                       if (updated == true && mounted) await _load();
                     },
-              icon: const HugeIcon(icon: HugeIcons.strokeRoundedEdit02, size: 16),
+              icon: const HugeIcon(
+                icon: HugeIcons.strokeRoundedEdit02,
+                size: 16,
+              ),
               label: const Text('Complete registration'),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 44),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           if (isRegDone && !isIdDone)
@@ -386,20 +414,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               onPressed: _busy
                   ? null
                   : () => _perform(() async {
-                        await ApiService.request('/onboarding/verify-identity', method: 'POST', body: {});
-                      }),
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const IdentityVerificationScreen(),
+                        ),
+                      );
+                    }),
               icon: _busy
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.onPrimary,
+                      ),
                     )
-                  : const HugeIcon(icon: HugeIcons.strokeRoundedShieldEnergy, color: AppColors.onPrimary, size: 18),
-              label: Text(_busy ? 'Checking…' : 'Verify my identity'),
+                  : const HugeIcon(
+                      icon: HugeIcons.strokeRoundedShieldEnergy,
+                      color: AppColors.onPrimary,
+                      size: 18,
+                    ),
+              label: Text(
+                _busy ? 'Please wait…' : 'Verify document & live selfie',
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 minimumSize: const Size(double.infinity, 46),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
         ],
@@ -422,7 +466,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             const Text(
               'Employment status',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.text),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.text,
+              ),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -451,10 +499,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: AppColors.border),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
               ),
-              validator: (v) =>
-                  (v?.trim().length ?? 0) < 2 ? 'Enter your occupation or income source' : null,
+              validator: (v) => (v?.trim().length ?? 0) < 2
+                  ? 'Enter your occupation or income source'
+                  : null,
             ),
             const SizedBox(height: 14),
             _amountField(
@@ -497,7 +549,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             decoration: BoxDecoration(
               color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.6),
+              ),
             ),
             child: Row(
               children: [
@@ -529,7 +583,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       const SizedBox(height: 2),
                       const Text(
                         'Verified mobile number for disbursements',
-                        style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -545,11 +602,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: 16),
           const Text(
             'Select mobile-money provider',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.text),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.text,
+            ),
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _wallet,
+            key: ValueKey(_wallet),
+            initialValue: _wallet,
             decoration: InputDecoration(
               filled: true,
               fillColor: AppColors.surfaceMuted,
@@ -561,12 +623,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: AppColors.border),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
             ),
             items: const [
               DropdownMenuItem(value: 'MPESA', child: Text('M-Pesa (Vodacom)')),
-              DropdownMenuItem(value: 'TIGO_PESA', child: Text('Mixx by Yas / Tigo Pesa')),
-              DropdownMenuItem(value: 'AIRTEL_MONEY', child: Text('Airtel Money')),
+              DropdownMenuItem(
+                value: 'TIGO_PESA',
+                child: Text('Mixx by Yas / Tigo Pesa'),
+              ),
+              DropdownMenuItem(
+                value: 'AIRTEL_MONEY',
+                child: Text('Airtel Money'),
+              ),
               DropdownMenuItem(value: 'HALOPESA', child: Text('HaloPesa')),
             ],
             onChanged: _busy ? null : (v) => setState(() => _wallet = v!),
@@ -574,7 +645,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: 10),
           const Text(
             'Use a wallet registered in your legal name on this verified phone number.',
-            style: TextStyle(fontSize: 11, color: AppColors.textMuted, height: 1.4),
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.textMuted,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -618,7 +693,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         labelText: label,
         hintText: hint,
         prefixText: 'TZS ',
-        prefixStyle: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.text),
+        prefixStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: AppColors.text,
+        ),
         filled: true,
         fillColor: AppColors.surfaceMuted,
         border: OutlineInputBorder(
@@ -629,11 +707,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
       ),
       validator: (v) {
         final amount = double.tryParse(v ?? '');
-        return amount == null || !amount.isFinite || amount < 0 || amount > 1000000000
+        return amount == null ||
+                !amount.isFinite ||
+                amount < 0 ||
+                amount > 1000000000
             ? 'Enter an amount from 0 to 1,000,000,000'
             : null;
       },
@@ -672,12 +756,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.forApplication ? 'Before your first loan' : 'Verification details'),
+        title: Text(
+          widget.forApplication
+              ? 'Before your first loan'
+              : 'Complete verification',
+        ),
         centerTitle: false,
       ),
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              )
             : Column(
                 children: [
                   Expanded(
@@ -704,7 +794,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               decoration: BoxDecoration(
                                 color: AppColors.error.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                                border: Border.all(
+                                  color: AppColors.error.withValues(alpha: 0.4),
+                                ),
                               ),
                               child: Row(
                                 children: [
@@ -717,7 +809,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   Expanded(
                                     child: Text(
                                       _error!,
-                                      style: const TextStyle(color: AppColors.error, fontSize: 12),
+                                      style: const TextStyle(
+                                        color: AppColors.error,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -727,7 +822,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             Center(
                               child: TextButton.icon(
                                 onPressed: _load,
-                                icon: const HugeIcon(icon: HugeIcons.strokeRoundedRefresh, size: 16),
+                                icon: const HugeIcon(
+                                  icon: HugeIcons.strokeRoundedRefresh,
+                                  size: 16,
+                                ),
                                 label: const Text('Retry'),
                               ),
                             ),
@@ -736,10 +834,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.6))),
+                      border: Border(
+                        top: BorderSide(
+                          color: AppColors.border.withValues(alpha: 0.6),
+                        ),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.04),
@@ -765,11 +870,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     ),
                                   )
                                 : const HugeIcon(
-                                    icon: HugeIcons.strokeRoundedCheckmarkBadge01,
+                                    icon:
+                                        HugeIcons.strokeRoundedCheckmarkBadge01,
                                     color: AppColors.onPrimary,
                                     size: 18,
                                   ),
-                            label: Text(_busy ? 'Saving details…' : 'Save details and verify wallet'),
+                            label: Text(
+                              _busy
+                                  ? 'Saving details…'
+                                  : 'Save details and verify wallet',
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               minimumSize: const Size(double.infinity, 48),
@@ -792,7 +902,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               widget.forApplication
                                   ? 'Continue to loan application'
                                   : 'Done',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary,

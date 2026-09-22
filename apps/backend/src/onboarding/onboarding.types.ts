@@ -1,3 +1,4 @@
+import type { IdentitySession } from './identity-verification.js';
 export interface BorrowerOnboarding {
   dateOfBirth: string;
   identityType: string;
@@ -12,7 +13,9 @@ export interface BorrowerOnboarding {
     acceptedAt: string; termsVersion: string; privacyVersion: string;
     termsText: string; privacyText: string; marketingConsent: boolean;
   }>;
-  identity?: { verifiedAt: string; reference: string; mode: 'live' | 'development' };
+  identity?: { verifiedAt: string; reference: string; mode: 'live' | 'development'; policyVersion?: number };
+  identitySession?: IdentitySession;
+  identityAttempts?: string[];
   financial?: {
     employmentStatus: string; occupation: string; monthlyIncome: number;
     essentialExpenses: number; existingLoanRepayments: number; updatedAt: string;

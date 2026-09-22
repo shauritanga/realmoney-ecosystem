@@ -66,3 +66,17 @@ Thumbs.db
 # Local tooling & agents
 .codex/
 .gemini/
+
+# Python, virtual environments, and data caches
+__pycache__/
+**/*__pycache__*
+*.py[cod]
+*$py.class
+.pytest_cache/
+**/.pytest_cache/
+.venv/
+**/.venv/
+env/
+venv/
+data/
+**/data/

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RealMoney - Uthibitishaji wa Kitambulisho (KYC)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .scanner-box {
+      position: relative;
+      border: 2px dashed rgba(16, 185, 129, 0.8);
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+    }
+    .selfie-oval {
+      position: relative;
+      border: 3px solid #10B981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
+    }
+    .pulse-ring {
+      animation: pulse-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-between p-4 font-sans select-none">
+
+  <!-- Header -->
+  <header class="w-full max-w-md flex items-center justify-between py-3 border-b border-slate-800">
+    <div class="flex items-center space-x-2">
+      <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-lg text-white shadow-lg">
+        RM
+      </div>
+      <div>
+        <h1 class="font-bold text-sm text-slate-100">RealMoney Identity</h1>
+        <p class="text-xs text-emerald-400 font-medium">Uthibitishaji Salama</p>
+      </div>
+    </div>
+    <div class="text-right">
+      <span id="step-badge" class="px-2.5 py-1 text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 rounded-full">
+        Hatua 1 kati ya 3
+      </span>
+    </div>
+  </header>
+
+  <!-- Main Viewport -->
+  <main class="w-full max-w-md flex-1 flex flex-col justify-center items-center my-4 relative">
+    
+    <!-- User info pill -->
+    <div class="mb-3 text-center">
+      <h2 id="instruction-title" class="text-lg font-bold text-white">Mbele ya Kitambulisho</h2>
+      <p id="instruction-desc" class="text-xs text-slate-400 mt-0.5">Weka upande wa mbele wa {{DOC_TYPE}} ndani ya fremu</p>
+    </div>
+
+    <!-- Camera / Viewfinder Box -->
+    <div id="camera-container" class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-black flex items-center justify-center shadow-2xl">
+      <video id="webcam" playsinline autoplay muted class="absolute inset-0 w-full h-full object-cover"></video>
+      <canvas id="snapshot-canvas" class="hidden"></canvas>
+
+      <!-- Document Overlay Guides -->
+      <div id="doc-guide" class="scanner-box w-[88%] h-[68%] pointer-events-none flex flex-col justify-between p-2">
+        <div class="flex justify-between">
+          <div class="w-4 h-4 border-t-2 border-l-2 border-emerald-400"></div>
+          <div class="w-4 h-4 border-t-2 border-r-2 border-emerald-400"></div>
+        </div>
+        <div class="flex justify-between">
+          <div class="w-4 h-4 border-b-2 border-l-2 border-emerald-400"></div>
+          <div class="w-4 h-4 border-b-2 border-r-2 border-emerald-400"></div>
+        </div>
+      </div>
+
+      <!-- Selfie Oval Guide (hidden initially) -->
+      <div id="selfie-guide" class="hidden selfie-oval w-[60%] h-[85%] pointer-events-none pulse-ring"></div>
+
+      <!-- Live Challenge Prompt Overlay -->
+      <div id="challenge-overlay" class="hidden absolute top-4 inset-x-4 bg-black/80 backdrop-blur-md py-2 px-4 rounded-xl text-center border border-emerald-500/30">
+        <p id="challenge-text" class="text-sm font-semibold text-emerald-300">Tazama moja kwa moja kwenye kamera...</p>
+      </div>
+
+      <!-- Loading overlay -->
+      <div id="loading-overlay" class="hidden absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+        <p id="loading-msg" class="text-sm font-medium text-slate-200">Inachakata picha...</p>
+      </div>
+
+      <!-- Completion Screen -->
+      <div id="success-screen" class="hidden absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mb-4 border border-emerald-500/40">
+          ✓
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">Uthibitishaji Umekamilika!</h3>
+        <p class="text-sm text-slate-300 mb-6">Nyaraka zako zimepokelewa na kuthibitishwa. Unaweza kurudi kwenye RealMoney App sasa.</p>
+        <button onclick="window.close()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-lg transition">
+          Funga Dirisha
+        </button>
+      </div>
+    </div>
+
+    <!-- Real-time Quality Guidance Notice -->
+    <div id="quality-feedback" class="mt-3 text-xs text-slate-400 flex items-center space-x-1.5">
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+      <span id="quality-msg">Hakikisha mwanga unatosha na maandishi yanasomeka vizuri</span>
+    </div>
+  </main>
+
+  <!-- Controls Footer -->
+  <footer class="w-full max-w-md flex flex-col space-y-3 pb-2">
+    <button id="snap-btn" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2 transition">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+      </svg>
+      <span id="btn-text">Piga Picha (Front)</span>
+    </button>
+
+    <!-- Fallback file upload -->
+    <div class="flex items-center justify-center">
+      <label class="text-xs text-slate-400 hover:text-emerald-400 cursor-pointer underline flex items-center space-x-1">
+        <span>Tatizo na kamera? Pakia faili kutoka simu</span>
+        <input type="file" id="file-input" accept="image/*" class="hidden">
+      </label>
+    </div>
+  </footer>
+
+  <script>
+    const SESSION_ID = "{{SESSION_ID}}";
+    let meta = null;
+    let currentStep = 0; // 0: front, 1: back, 2: liveness, 3: done
+    let stream = null;
+
+    const video = document.getElementById("webcam");
+    const canvas = document.getElementById("snapshot-canvas");
+    const snapBtn = document.getElementById("snap-btn");
+    const btnText = document.getElementById("btn-text");
+    const title = document.getElementById("instruction-title");
+    const desc = document.getElementById("instruction-desc");
+    const stepBadge = document.getElementById("step-badge");
+    const docGuide = document.getElementById("doc-guide");
+    const selfieGuide = document.getElementById("selfie-guide");
+    const challengeOverlay = document.getElementById("challenge-overlay");
+    const challengeText = document.getElementById("challenge-text");
+    const loadingOverlay = document.getElementById("loading-overlay");
+    const loadingMsg = document.getElementById("loading-msg");
+    const successScreen = document.getElementById("success-screen");
+    const fileInput = document.getElementById("file-input");
+
+    async function init() {
+      try {
+        const res = await fetch(`/capture/${SESSION_ID}/meta`);
+        meta = await res.json();
+        setupStep();
+        startCamera();
+      } catch (e) {
+        alert("Imeshindwa kufungua kipindi cha uthibitishaji: " + e.message);
+      }
+    }
+
+    async function startCamera(facing = "environment") {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false
+        });
+        video.srcObject = stream;
+      } catch (e) {
+        console.warn("Camera permission denied or unavailable:", e);
+      }
+    }
+
+    function setupStep() {
+      const isPassport = meta.docType === "PASSPORT";
+      
+      if (currentStep === 0) {
+        stepBadge.innerText = isPassport ? "Hatua 1 kati ya 2" : "Hatua 1 kati ya 3";
+        title.innerText = isPassport ? "Ukurasa wa Picha (Passport)" : "Mbele ya Kitambulisho";
+        desc.innerText = `Weka upande wa mbele wa ${meta.docType} ndani ya fremu`;
+        btnText.innerText = "Piga Picha (Front)";
+        docGuide.classList.remove("hidden");
+        selfieGuide.classList.add("hidden");
+        challengeOverlay.classList.add("hidden");
+      } else if (currentStep === 1) {
+        if (isPassport) {
+          currentStep = 2;
+          setupStep();
+          return;
+        }
+        stepBadge.innerText = "Hatua 2 kati ya 3";
+        title.innerText = "Nyuma ya Kitambulisho";
+        desc.innerText = `Weka upande wa nyuma wa ${meta.docType} ndani ya fremu`;
+        btnText.innerText = "Piga Picha (Back)";
+        docGuide.classList.remove("hidden");
+        selfieGuide.classList.add("hidden");
+        challengeOverlay.classList.add("hidden");
+      } else if (currentStep === 2) {
+        stepBadge.innerText = isPassport ? "Hatua 2 kati ya 2" : "Hatua 3 kati ya 3";
+        title.innerText = "Picha ya Moja kwa Moja (Selfie)";
+        desc.innerText = "Weka uso wako ndani ya duara na ufuate maelekezo";
+        btnText.innerText = "Anza Uthibitishaji wa Uso";
+        docGuide.classList.add("hidden");
+        selfieGuide.classList.remove("hidden");
+        startCamera("user"); // Switch to front camera for selfie
+      }
+    }
+
+    function captureFrameBlob() {
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      return new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    }
+
+    async function uploadBlob(blob, side) {
+      const formData = new FormData();
+      formData.append("side", side);
+      formData.append("file", blob, `${side}.jpg`);
+
+      const res = await fetch(`/capture/${SESSION_ID}/upload`, {
+        method: "POST",
+        body: formData
+      });
+      return await res.json();
+    }
+
+    snapBtn.addEventListener("click", async () => {
+      if (currentStep === 0) {
+        showLoading("Inahakiki picha ya mbele...");
+        const blob = await captureFrameBlob();
+        await uploadBlob(blob, "front");
+        hideLoading();
+        currentStep = 1;
+        setupStep();
+      } else if (currentStep === 1) {
+        showLoading("Inahakiki picha ya nyuma...");
+        const blob = await captureFrameBlob();
+        await uploadBlob(blob, "back");
+        hideLoading();
+        currentStep = 2;
+        setupStep();
+      } else if (currentStep === 2) {
+        // Run Active Liveness sequence
+        snapBtn.disabled = true;
+        challengeOverlay.classList.remove("hidden");
+
+        // Challenge 1: Look straight
+        challengeText.innerText = "1. Tazama kamera bila kupepesa...";
+        await sleep(1000);
+        const frame1 = await captureFrameBlob();
+        await uploadBlob(frame1, "selfie_0");
+
+        // Challenge 2: Blink eyes
+        challengeText.innerText = "2. Pesa macho yako mara moja...";
+        await sleep(1000);
+        const frame2 = await captureFrameBlob();
+        await uploadBlob(frame2, "selfie_1");
+
+        // Challenge 3: Smile or tilt
+        challengeText.innerText = "3. Tabasamu kidogo...";
+        await sleep(900);
+        const frame3 = await captureFrameBlob();
+        await uploadBlob(frame3, "selfie_2");
+
+        // Submit complete verification
+        showLoading("Inachakata uthibitishaji na OpenCV...");
+        const submitRes = await fetch(`/capture/${SESSION_ID}/submit`, { method: "POST" });
+        const data = await submitRes.json();
+        hideLoading();
+
+        // Show completed screen
+        successScreen.classList.remove("hidden");
+      }
+    });
+
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const side = currentStep === 0 ? "front" : (currentStep === 1 ? "back" : "selfie_0");
+      showLoading(`Inapakia ${side}...`);
+      await uploadBlob(file, side);
+      hideLoading();
+      currentStep++;
+      if (currentStep > 2) {
+        showLoading("Inachakata...");
+        await fetch(`/capture/${SESSION_ID}/submit`, { method: "POST" });
+        hideLoading();
+        successScreen.classList.remove("hidden");
+      } else {
+        setupStep();
+      }
+    });
+
+    function showLoading(msg) {
+      loadingMsg.innerText = msg;
+      loadingOverlay.classList.remove("hidden");
+    }
+    function hideLoading() {
+      loadingOverlay.classList.add("hidden");
+    }
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>

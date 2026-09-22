@@ -208,6 +208,8 @@ export class LoansService {
       throw new BadRequestException(`Cannot approve loan with status ${loan.status}`);
     }
 
+    await this.onboarding.assertCanApply(loan.borrowerId);
+
     await this.loans.update(
       { id: loanId },
       { status: LoanStatus.APPROVED, approvedBy: adminId, approvedAt: new Date() },
@@ -226,6 +228,8 @@ export class LoansService {
     if (loan.status !== LoanStatus.APPROVED) {
       throw new BadRequestException(`Loan must be in APPROVED status to disburse. Current: ${loan.status}`);
     }
+
+    await this.onboarding.assertCanApply(loan.borrowerId);
 
     const disbursement = await this.clickPesaService.disburseLoan({
       loanId: loan.id,

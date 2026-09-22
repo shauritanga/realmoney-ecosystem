@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { Injectable, ServiceUnavailableException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -22,9 +22,6 @@ export class VerificationProvider {
     const base = this.config.get<string>('VERIFICATION_BRIDGE_URL');
     const key = this.config.get<string>('VERIFICATION_BRIDGE_TOKEN');
     if (!base?.startsWith('https://') || !key) {
-      if (this.config.get('AUTO_VERIFY_ONBOARDING') === 'true' || this.config.get('AUTO_VERIFY_IDENTITY') === 'true') {
-        return { verified: true, reference: `auto-identity-${randomUUID().slice(0, 8)}`, mode: 'live' as const };
-      }
       throw new ServiceUnavailableException('Verification is not configured. Please contact support and try again later.');
     }
     try {
@@ -42,6 +39,49 @@ export class VerificationProvider {
       if (error instanceof BadRequestException) throw error;
       throw new ServiceUnavailableException('Verification service is unavailable. Please retry.');
     }
+  }
+
+  identityConfiguration() {
+    const text = this.config.get<string>('IDENTITY_PRIVACY_NOTICE_TEXT')?.trim();
+    const enabled = this.config.get('IDENTITY_VERIFICATION_ENABLED') === 'true';
+    const approved = this.config.get('IDENTITY_PRIVACY_NOTICE_APPROVED') === 'true';
+    const base = this.config.get<string>('VERIFICATION_BRIDGE_URL');
+    const token = this.config.get<string>('VERIFICATION_BRIDGE_TOKEN');
+    const hosts = (this.config.get<string>('IDENTITY_CAPTURE_HOSTS') ?? '').split(',').map(x => x.trim()).filter(Boolean);
+    return {
+      available: !!(enabled && text && approved && base?.startsWith('https://') && token && hosts.length),
+      notice: text ?? '',
+      noticeVersion: text ? createHash('sha256').update(text).digest('hex') : '',
+      hosts,
+    };
+  }
+
+  async identitySessionRequest(path: string, payload?: Record<string, unknown>): Promise<any> {
+    if (!this.identityConfiguration().available) {
+      throw new ServiceUnavailableException('Document and selfie verification is not available yet. Please try again later.');
+    }
+    try {
+      const base = this.config.get<string>('VERIFICATION_BRIDGE_URL')!;
+      const response = await fetch(`${base.replace(/\/$/, '')}/identity/sessions${path}`, {
+        method: payload ? 'POST' : 'GET', redirect: 'error', signal: AbortSignal.timeout(10000),
+        headers: { Authorization: `Bearer ${this.config.get<string>('VERIFICATION_BRIDGE_TOKEN')}`, 'Content-Type': 'application/json' },
+        ...(payload ? { body: JSON.stringify(payload) } : {}),
+      });
+      if (!response.ok) throw new Error('Provider unavailable');
+      return await response.json();
+    } catch {
+      throw new ServiceUnavailableException('Document and selfie verification is temporarily unavailable. Please retry.');
+    }
+  }
+
+  validateCaptureUrl(value: unknown): string {
+    if (typeof value !== 'string' || value.length > 2048) throw new ServiceUnavailableException('Invalid verification session');
+    let url: URL;
+    try { url = new URL(value); } catch { throw new ServiceUnavailableException('Invalid verification session'); }
+    if (url.protocol !== 'https:' || url.username || url.password || url.port || !this.identityConfiguration().hosts.includes(url.hostname)) {
+      throw new ServiceUnavailableException('Invalid verification session');
+    }
+    return url.toString();
   }
 
   private async sendBeemSms(payload: Record<string, unknown>) {
@@ -96,11 +136,6 @@ export class VerificationProvider {
     const secret = this.config.get<string>('SELCOM_API_SECRET');
     const base = this.config.get<string>('SELCOM_BASE_URL', 'https://apigw.selcommobile.com/v1');
     if (!key || !secret || /TEST|PLACEHOLDER/.test(key) || !base.startsWith('https://')) {
-      if (this.config.get('AUTO_VERIFY_ONBOARDING') === 'true' || this.config.get('AUTO_VERIFY_WALLET') === 'true') {
-        const codes: Record<string, string> = { MPESA: 'MPREMITIN', TIGO_PESA: 'TPREMITIN', HALOPESA: 'HPREMITIN', AIRTEL_MONEY: 'AMREMITIN' };
-        if (!codes[String(payload.provider)]) throw new BadRequestException('Unsupported mobile-money provider');
-        return { verified: true, reference: `auto-wallet-${randomUUID().slice(0, 8)}`, mode: 'live' as const };
-      }
       throw new ServiceUnavailableException('Wallet verification is not configured');
     }
     const codes: Record<string, string> = { MPESA: 'MPREMITIN', TIGO_PESA: 'TPREMITIN', HALOPESA: 'HPREMITIN', AIRTEL_MONEY: 'AMREMITIN' };

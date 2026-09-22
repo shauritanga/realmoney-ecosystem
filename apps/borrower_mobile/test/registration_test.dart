@@ -139,7 +139,7 @@ void main() {
     await capture(tester, 'register-personal');
     await enter(tester, 'Full legal name', 'Test Borrower');
     await enter(tester, 'Date of birth (YYYY-MM-DD)', '1990-01-01');
-    await enter(tester, 'Identity document number', '19900101123450000101');
+    await enter(tester, 'NIDA / NIN number', '19900101123450000101');
     await tapText(tester, 'Continue');
     for (final label in ['Region', 'District', 'Ward', 'Street / village']) { await enter(tester, label, 'Test address'); }
     await capture(tester, 'register-address');

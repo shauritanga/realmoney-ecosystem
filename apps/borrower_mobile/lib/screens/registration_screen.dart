@@ -71,7 +71,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     else if (_hasSentCode) { _goTo(1); }
     else { _sendCode(); }
   }
+  static const _identityTypes = {'NIDA', 'VOTER_ID', 'DRIVING_LICENSE', 'PASSPORT'};
   String _identityType = 'NIDA';
+  String get _identityLabel => switch (_identityType) {
+    'VOTER_ID' => 'Voter ID',
+    'DRIVING_LICENSE' => 'Driving licence',
+    'PASSPORT' => 'Passport',
+    _ => 'NIDA / NIN',
+  };
   Map<String, dynamic>? _legal;
   int _resendSeconds = 0;
   Timer? _timer;
@@ -87,7 +94,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       final onboarding = profile['onboarding'] as Map<String, dynamic>? ?? {};
       for (final name in ['phone', 'fullName', 'nationalId', 'email']) { field(name).text = profile[name]?.toString() ?? ''; }
       for (final name in ['dateOfBirth', 'region', 'district', 'ward', 'street', 'landmark']) { field(name).text = onboarding[name]?.toString() ?? ''; }
-      _identityType = onboarding['identityType'] ?? 'NIDA';
+      final stored = onboarding['identityType']?.toString() ?? 'NIDA';
+      _identityType = _identityTypes.contains(stored) ? stored : 'NIDA';
     }
     _loadLegal();
     LocationsService.load();
@@ -199,6 +207,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               date.toIso8601String().substring(0, 10) != text || date.isAfter(DateTime(now.year - 18, now.month, now.day))) { return 'Enter a valid birth date; you must be 18 or older'; }
         }
         if (name == 'email' && text.isNotEmpty && !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(text)) return 'Enter a valid email address';
+        if (name == 'nationalId') {
+          final digits = text.replaceAll(RegExp(r'[\s-]'), '').toUpperCase();
+          if (_identityType == 'NIDA') {
+            if (!RegExp(r'^\d{20}$').hasMatch(digits)) return 'Enter the 20-digit NIDA number';
+          } else if (!RegExp(r'^[A-Z0-9]{5,20}$').hasMatch(digits)) {
+            return 'Enter a valid $_identityLabel number (5–20 letters/digits)';
+          }
+        }
         return null;
       }),
   );
@@ -346,10 +362,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           _input('fullName', 'Full legal name'),
                           _input('dateOfBirth', 'Date of birth (YYYY-MM-DD)', keyboard: TextInputType.datetime),
                           DropdownButtonFormField<String>(initialValue: _identityType, decoration: const InputDecoration(labelText: 'Identity document'),
-                            items: const [DropdownMenuItem(value: 'NIDA', child: Text('NIDA / NIN')), DropdownMenuItem(value: 'PASSPORT', child: Text('Passport'))],
+                            items: const [DropdownMenuItem(value: 'NIDA', child: Text('NIDA / NIN')), DropdownMenuItem(value: 'VOTER_ID', child: Text('Voter ID')), DropdownMenuItem(value: 'DRIVING_LICENSE', child: Text('Driving licence')), DropdownMenuItem(value: 'PASSPORT', child: Text('Passport'))],
                             onChanged: _busy ? null : (value) => setState(() => _identityType = value!)),
                           const SizedBox(height: 18),
-                          _input('nationalId', 'Identity document number'),
+                          _input('nationalId', '$_identityLabel number'),
                           _input('email', 'Email (optional)', optional: true, keyboard: TextInputType.emailAddress),
                           const Text('We will verify these details before you can apply for a loan.'),
                         ],

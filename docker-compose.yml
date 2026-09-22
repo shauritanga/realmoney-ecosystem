@@ -21,6 +21,22 @@ services:
     volumes:
       - redis_data:/data
 
+  kyc-service:
+    build:
+      context: ./apps/kyc-service
+      dockerfile: Dockerfile
+    container_name: realmoney-kyc-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - VERIFICATION_BRIDGE_TOKEN=realmoney-bridge-secret-key-change-me
+      - CAPTURE_BASE_URL=https://capture.realmoney.tz
+      - KYC_DEV_MODE=false
+    volumes:
+      - kyc_data:/app/data
+
 volumes:
   postgres_data:
   redis_data:
+  kyc_data:

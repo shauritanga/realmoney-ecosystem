@@ -41,7 +41,7 @@ function memoryDb() {
 }
 function setup() {
   const memory = memoryDb();
-  const config = new ConfigService({ NODE_ENV: 'test', ONBOARDING_DEV_MODE: 'true' });
+  const config = new ConfigService({ NODE_ENV: 'test', ONBOARDING_DEV_MODE: 'true', IDENTITY_VERIFICATION_ENABLED: 'true', IDENTITY_PRIVACY_NOTICE_APPROVED: 'true', IDENTITY_PRIVACY_NOTICE_TEXT: 'Synthetic document and biometric verification notice.', VERIFICATION_BRIDGE_URL: 'https://bridge.example', VERIFICATION_BRIDGE_TOKEN: 'test', IDENTITY_CAPTURE_HOSTS: 'capture.example' });
   const provider = new VerificationProvider(config);
   const phones = new PhoneVerificationService(memory.db, config, provider);
   const legal = new LegalService(config, provider);
@@ -133,7 +133,16 @@ describe('registration and pre-loan checks', () => {
     expect(user.onboarding?.consents[0].marketingConsent).toBe(false);
     expect(user.onboarding?.consents[0].termsText).toBe(docs.terms.text);
     await expect(onboarding.assertCanApply(user.id)).rejects.toThrow();
-    await onboarding.verifyIdentity(user.id);
+    await expect(onboarding.verifyIdentity(user.id)).rejects.toThrow('Update the app');
+    const provider = (onboarding as any).provider as VerificationProvider;
+    const request = vi.spyOn(provider, 'identitySessionRequest');
+    request.mockImplementation(async (_path, payload) => ({
+      sessionId: 'session-test', requestId: payload!.requestId, subjectId: user.id,
+      mode: 'development', hostedUrl: 'https://capture.example/session', expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    }));
+    await onboarding.startIdentitySession(user.id, provider.identityConfiguration().noticeVersion, true);
+    request.mockResolvedValue(identityResult(user));
+    await onboarding.refreshIdentitySession(user.id);
     const financial = { employmentStatus: 'EMPLOYED', occupation: 'Teacher', monthlyIncome: 500000, essentialExpenses: 200000,
       existingLoanRepayments: 0, walletPhone: valid.phone, walletProvider: 'MPESA' };
     await expect(onboarding.saveFinancial(user.id, { ...financial, walletPhone: '+255712345679' })).rejects.toThrow('verified account');
@@ -200,18 +209,151 @@ describe('provider adapters', () => {
     fetchMock.mockRejectedValue(new Error('timeout'));
     await expect(provider.request('identity', {})).rejects.toThrow('unavailable');
   });
-  it('auto-verifies identity and wallet when AUTO_VERIFY_ONBOARDING is enabled in production', async () => {
-    const provider = new VerificationProvider(new ConfigService({ NODE_ENV: 'production', AUTO_VERIFY_ONBOARDING: 'true' }));
-    const idResult = await provider.request('identity', { fullName: 'Lulu Sebastian', nationalId: '19860626613050000528' });
-    expect(idResult.verified).toBe(true);
-    expect(idResult.mode).toBe('live');
-    expect(idResult.reference).toContain('auto-identity');
+  it('never treats production auto-verify flags as provider evidence', async () => {
+    const provider = new VerificationProvider(new ConfigService({ NODE_ENV: 'production', AUTO_VERIFY_ONBOARDING: 'true', AUTO_VERIFY_IDENTITY: 'true', AUTO_VERIFY_WALLET: 'true' }));
+    await expect(provider.request('identity', {})).rejects.toThrow('not configured');
+    await expect(provider.request('wallet', { phone: valid.phone, provider: 'MPESA' })).rejects.toThrow('not configured');
+  });
+});
 
-    const walletResult = await provider.request('wallet', { phone: '+255629593331', provider: 'MPESA' });
-    expect(walletResult.verified).toBe(true);
-    expect(walletResult.mode).toBe('live');
-    expect(walletResult.reference).toContain('auto-wallet');
+function identityResult(user: User, overrides: Record<string, unknown> = {}) {
+  const session = user.onboarding!.identitySession!;
+  return {
+    sessionId: session.sessionId, requestId: session.requestId, subjectId: user.id,
+    mode: session.mode, status: 'verified',
+    document: { authentic: true, capturedSides: ['front', 'back'], type: user.onboarding!.identityType,
+      fullName: user.fullName, number: user.nationalId, dateOfBirth: user.onboarding!.dateOfBirth },
+    liveness: { passed: true }, faceMatch: { passed: true }, ...overrides,
+  };
+}
+async function identitySetup() {
+  const env = setup();
+  const sent = await env.phones.send(valid.phone, 'ip');
+  const proof = await env.phones.verify(valid.phone, sent.developmentCode!);
+  const docs = env.legal.getDocuments();
+  const user = await env.onboarding.saveProfile({ ...valid, phoneProof: proof.phoneProof, termsVersion: docs.terms.version, privacyVersion: docs.privacy.version });
+  const request = vi.spyOn(env.provider, 'identitySessionRequest').mockImplementation(async (_path, payload) => ({
+    sessionId: 'session-test', requestId: payload!.requestId, subjectId: user.id,
+    mode: 'development', hostedUrl: 'https://capture.example/session', expiresAt: new Date(Date.now() + 3600000).toISOString(),
+  }));
+  const start = () => env.onboarding.startIdentitySession(user.id, env.provider.identityConfiguration().noticeVersion, true);
+  return { ...env, user, request, start };
+}
 
-    await expect(provider.request('wallet', { phone: '+255629593331', provider: 'INVALID_PROVIDER' })).rejects.toThrow('Unsupported mobile-money provider');
+describe('document and biometric verification sessions', () => {
+  it('requires consent and the exact current notice', async () => {
+    const { onboarding, user, request } = await identitySetup();
+    await expect(onboarding.startIdentitySession(user.id, 'old', true)).rejects.toThrow('current identity');
+    await expect(onboarding.startIdentitySession(user.id, 'old', false)).rejects.toThrow('current identity');
+    expect(request).not.toHaveBeenCalled();
+  });
+  it('binds capture requirements to registration and reuses an active session', async () => {
+    const { start, request, onboarding, user } = await identitySetup();
+    await start(); await start();
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0][1]).toMatchObject({ requiredSides: ['front', 'back'], identity: { type: 'NIDA' } });
+    const profile = await onboarding.profile(user.id);
+    expect(profile.onboarding).not.toHaveProperty('identitySession');
+    expect(JSON.stringify(profile)).not.toContain('https://capture.example/session');
+    expect(profile.canApply).toBe(false);
+  });
+  it('requires only the biodata page for a passport', async () => {
+    const { user, start, request, onboarding } = await identitySetup();
+    user.onboarding!.identityType = 'PASSPORT';
+    await start();
+    expect(request.mock.calls[0][1]).toMatchObject({ requiredSides: ['biodata'] });
+    const result = identityResult(user); result.document.capturedSides = ['biodata'];
+    request.mockResolvedValue(result);
+    expect((await onboarding.refreshIdentitySession(user.id)).status).toBe('verified');
+  });
+  it.each(['liveness', 'faceMatch'])('does not approve a missing %s check', async (check) => {
+    const { start, user, request, onboarding } = await identitySetup();
+    await start(); request.mockResolvedValue(identityResult(user, { [check]: { passed: false } }));
+    expect((await onboarding.refreshIdentitySession(user.id)).status).toBe('review');
+    expect((await onboarding.profile(user.id)).identityVerified).toBe(false);
+  });
+  it.each(['authentic', 'capturedSides', 'number', 'type', 'fullName', 'dateOfBirth'])('does not approve invalid document %s', async field => {
+    const { start, user, request, onboarding } = await identitySetup();
+    await start(); const result = identityResult(user);
+    (result.document as any)[field] = field === 'authentic' ? false : field === 'capturedSides' ? ['front'] : 'different';
+    request.mockResolvedValue(result);
+    expect((await onboarding.refreshIdentitySession(user.id)).status).toBe('review');
+  });
+  it.each(['sessionId', 'requestId', 'subjectId', 'mode'])('rejects a result with a different %s', async field => {
+    const { start, user, request, onboarding } = await identitySetup();
+    await start(); request.mockResolvedValue(identityResult(user, { [field]: 'another' }));
+    await expect(onboarding.refreshIdentitySession(user.id)).rejects.toThrow('does not match');
+    expect((await onboarding.profile(user.id)).identityVerified).toBe(false);
+  });
+  it('keeps processing and review pending, refreshes review, and ignores stale profile evidence', async () => {
+    const { start, user, request, onboarding } = await identitySetup();
+    await start(); request.mockResolvedValue(identityResult(user, { status: 'review' }));
+    expect((await onboarding.refreshIdentitySession(user.id)).status).toBe('review');
+    expect((await start()).hostedUrl).toBeNull();
+    user.onboarding!.identitySession!.checkedAt = new Date(Date.now() - 16000).toISOString();
+    request.mockResolvedValue(identityResult(user));
+    await onboarding.refreshIdentitySession(user.id);
+    expect((await onboarding.profile(user.id)).identityVerified).toBe(true);
+    user.nationalId = 'changed';
+    expect((await onboarding.profile(user.id)).identityVerified).toBe(false);
+  });
+  it('preserves pending state on provider failure and limits successful session creation', async () => {
+    const { start, user, request, onboarding } = await identitySetup();
+    await start(); request.mockRejectedValue(new Error('timeout'));
+    await expect(onboarding.refreshIdentitySession(user.id)).rejects.toThrow();
+    expect(user.onboarding!.identitySession!.status).toBe('capture_required');
+    user.onboarding!.identitySession!.status = 'expired';
+    user.onboarding!.identityAttempts = Array(3).fill(new Date().toISOString());
+    await expect(start()).rejects.toThrow('attempt limit');
+  });
+  it('uses the same provider idempotency key after an ambiguous session-create failure', async () => {
+    const { start, request } = await identitySetup();
+    request.mockRejectedValue(new Error('timeout'));
+    await expect(start()).rejects.toThrow('timeout');
+    await expect(start()).rejects.toThrow('timeout');
+    expect(request.mock.calls[0][1]!.requestId).toBe(request.mock.calls[1][1]!.requestId);
+  });
+  it('requires recapture of development evidence after switching to production', async () => {
+    const { start, user, request, onboarding, config } = await identitySetup();
+    await start(); request.mockResolvedValue(identityResult(user));
+    await onboarding.refreshIdentitySession(user.id);
+    config.set('NODE_ENV', 'production');
+    const profile = await onboarding.profile(user.id);
+    expect(profile.identityVerified).toBe(false);
+    expect(profile.identityVerification.status).toBe('not_started');
+  });
+  it('authenticates bridge requests, rejects redirects/failures, and keeps errors generic', async () => {
+    const { provider } = setup();
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ status: 'processing' }) });
+    vi.stubGlobal('fetch', fetchMock);
+    await provider.identitySessionRequest('', { subjectId: 'test-borrower' });
+    expect(fetchMock.mock.calls[0][0]).toBe('https://bridge.example/identity/sessions');
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'POST', redirect: 'error', headers: { Authorization: 'Bearer test' } });
+    await provider.identitySessionRequest('/session-test');
+    expect(fetchMock.mock.calls[1][1].method).toBe('GET');
+    fetchMock.mockRejectedValue(new Error('secret provider internals'));
+    await expect(provider.identitySessionRequest('/session-test')).rejects.toThrow('temporarily unavailable');
+  });
+  it('does not start hosted sessions with unapproved privacy configuration', async () => {
+    const { provider, config } = setup();
+    config.set('IDENTITY_PRIVACY_NOTICE_APPROVED', 'false');
+    const fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock);
+    expect(provider.identityConfiguration().available).toBe(false);
+    await expect(provider.identitySessionRequest('', {})).rejects.toThrow('not available yet');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it('rejects unsafe capture URLs', () => {
+    const { provider } = setup();
+    for (const url of ['http://capture.example/a', 'https://capture.example.evil/a', 'https://user@capture.example/a', 'https://capture.example:8443/a', 'bad']) {
+      expect(() => provider.validateCaptureUrl(url)).toThrow();
+    }
+    expect(provider.validateCaptureUrl('https://capture.example/a')).toBe('https://capture.example/a');
+  });
+  it('cannot grant live access from legacy identity or wallet auto approvals', () => {
+    const { onboarding } = setup();
+    const user = { id: 'old', phone: valid.phone, kycStatus: KycStatus.VERIFIED,
+      onboarding: { identity: { mode: 'live', reference: 'auto-identity-x' }, wallet: { mode: 'live', phone: valid.phone, reference: 'auto-wallet-x' } } } as User;
+    expect(onboarding.readiness(user).identityVerified).toBe(false);
+    expect(onboarding.readiness(user).walletVerified).toBe(false);
   });
 });

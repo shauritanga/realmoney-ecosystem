@@ -10,7 +10,7 @@ export class ProfileDto extends PhoneDto {
   @IsString() @Length(32, 128) phoneProof: string;
   @IsString() @Length(3, 120) fullName: string;
   @IsString() @Matches(/^\d{4}-\d{2}-\d{2}$/) dateOfBirth: string;
-  @IsIn(['NIDA', 'PASSPORT']) identityType: string;
+  @IsIn(['NIDA', 'VOTER_ID', 'DRIVING_LICENSE', 'PASSPORT']) identityType: string;
   @IsString() @Length(5, 40) nationalId: string;
   @IsString() @Length(2, 80) region: string;
   @IsString() @Length(2, 80) district: string;
@@ -36,4 +36,9 @@ export class FinancialProfileDto {
   @IsNumber() @Min(0) @Max(1000000000) existingLoanRepayments: number;
   @IsString() @Length(9, 20) walletPhone: string;
   @IsIn(['MPESA', 'AIRTEL_MONEY', 'TIGO_PESA', 'HALOPESA']) walletProvider: string;
+}
+
+export class IdentitySessionDto {
+  @IsString() @Matches(/^[a-f0-9]{64}$/) noticeVersion: string;
+  @IsBoolean() consent: boolean;
 }

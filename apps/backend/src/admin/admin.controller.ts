@@ -1,6 +1,6 @@
 import { OnboardingService } from '../onboarding/onboarding.service.js';
 import { SettingsService } from '../settings/settings.service.js';
-import { Controller, Get, UseGuards, Query, Put, Body, Param } from '@nestjs/common';
+import { Controller, Get, UseGuards, Query, Put, Body, Param, Post } from '@nestjs/common';
 import { AdminService } from './admin.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
@@ -14,7 +14,10 @@ export class AdminController {
   constructor(private readonly adminService: AdminService, private readonly settings: SettingsService, private readonly onboarding: OnboardingService) {}
 
   @Get('borrowers/:id/onboarding')
-  getBorrowerOnboarding(@Param('id') id: string) { return this.onboarding.profile(id); }
+  getBorrowerOnboarding(@Param('id') id: string) { return this.onboarding.profile(id, true); }
+
+  @Post('borrowers/:id/identity/refresh')
+  refreshBorrowerIdentity(@Param('id') id: string) { return this.onboarding.refreshIdentitySession(id); }
 
   @Get('settings')
   getSettings() { return this.settings.get(); }

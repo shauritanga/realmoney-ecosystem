@@ -8,6 +8,13 @@ interface Profile {
   identityVerified: boolean;
   walletVerified: boolean;
   financialComplete: boolean;
+  identityVerification?: {
+    status: string;
+    sessionReference?: string;
+    mode?: string;
+    completedAt?: string;
+    checks?: Record<string, boolean>;
+  };
   onboarding: {
     region: string;
     district: string;
@@ -51,6 +58,20 @@ export function BorrowerReview({
     } finally {
       setLoading(false);
     }
+  }
+
+  async function refreshIdentity() {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/v1/admin/borrowers/${borrowerId}/identity/refresh`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Unable to refresh verification. Please retry.');
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to refresh verification');
+    } finally { setLoading(false); }
   }
 
   const financial = profile?.onboarding?.financial;
@@ -99,6 +120,22 @@ export function BorrowerReview({
                   {profile.financialComplete ? 'Current' : 'Missing or expired'}
                 </strong>
               </p>
+              {profile.identityVerification && (
+                <div className="space-y-2">
+                  <p>Document &amp; live selfie: <strong>{profile.identityVerification.status.replaceAll('_', ' ')}</strong></p>
+                  {profile.identityVerification.mode === 'development' && <p className="text-amber-700">Development evidence — not live verification.</p>}
+                  {profile.identityVerification.sessionReference && <p>Provider reference: <span className="select-all font-mono">{profile.identityVerification.sessionReference}</span></p>}
+                  {profile.identityVerification.checks && <dl className="grid grid-cols-2 gap-2">
+                    {Object.entries({ documentAuthenticity: 'Document authenticity', documentSides: 'Required document sides', registrationMatch: 'Registration details match', liveness: 'Liveness', faceMatch: 'Face match' }).map(([key, label]) => (
+                      <div key={key}><dt>{label}</dt><dd>{profile.identityVerification?.checks?.[key] ? 'Passed' : 'Needs review'}</dd></div>
+                    ))}
+                  </dl>}
+                  {['capture_required', 'processing', 'review'].includes(profile.identityVerification.status) && <>
+                    <p>Complete any manual review in the approved provider console, then refresh. Approval still requires all identity checks to pass.</p>
+                    <button type="button" onClick={() => void refreshIdentity()} className="font-semibold text-emerald-700 underline dark:text-emerald-400">Refresh provider result</button>
+                  </>}
+                </div>
+              )}
               {profile.onboarding && (
                 <p className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
                   <HugeiconsIcon icon={Location01Icon} size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
