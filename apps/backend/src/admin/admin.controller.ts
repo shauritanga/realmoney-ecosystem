@@ -13,11 +13,24 @@ import { UserRole } from '../database/enums.js';
 export class AdminController {
   constructor(private readonly adminService: AdminService, private readonly settings: SettingsService, private readonly onboarding: OnboardingService) {}
 
+  @Get('borrowers/kyc-queue')
+  getBorrowersKycQueue() { return this.onboarding.getBorrowersKycQueue(); }
+
   @Get('borrowers/:id/onboarding')
   getBorrowerOnboarding(@Param('id') id: string) { return this.onboarding.profile(id, true); }
 
   @Post('borrowers/:id/identity/refresh')
   refreshBorrowerIdentity(@Param('id') id: string) { return this.onboarding.refreshIdentitySession(id); }
+
+  @Post('borrowers/:id/identity/approve')
+  approveBorrowerIdentity(@Param('id') id: string) {
+    return this.onboarding.approveBorrowerIdentity(id);
+  }
+
+  @Post('borrowers/:id/identity/reset')
+  resetBorrowerIdentity(@Param('id') id: string, @Body() body: { reason?: string }) {
+    return this.onboarding.resetBorrowerIdentity(id, body?.reason);
+  }
 
   @Get('settings')
   getSettings() { return this.settings.get(); }

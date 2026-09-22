@@ -74,6 +74,41 @@ export function BorrowerReview({
     } finally { setLoading(false); }
   }
 
+  async function approveIdentity() {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/v1/admin/borrowers/${borrowerId}/identity/approve`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Unable to approve identity. Please retry.');
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to approve identity');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resetIdentity() {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/v1/admin/borrowers/${borrowerId}/identity/reset`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Admin requested recapture of identity document' }),
+      });
+      if (!response.ok) throw new Error('Unable to reset identity. Please retry.');
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to reset identity');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const financial = profile?.onboarding?.financial;
 
   return (
@@ -130,10 +165,63 @@ export function BorrowerReview({
                       <div key={key}><dt>{label}</dt><dd>{profile.identityVerification?.checks?.[key] ? 'Passed' : 'Needs review'}</dd></div>
                     ))}
                   </dl>}
-                  {['capture_required', 'processing', 'review'].includes(profile.identityVerification.status) && <>
-                    <p>Complete any manual review in the approved provider console, then refresh. Approval still requires all identity checks to pass.</p>
-                    <button type="button" onClick={() => void refreshIdentity()} className="font-semibold text-emerald-700 underline dark:text-emerald-400">Refresh provider result</button>
-                  </>}
+                  {profile.identityVerification.sessionReference && (
+                    <div className="mt-2 space-y-1">
+                      <span className="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Captured Photos:</span>
+                      <div className="flex flex-wrap gap-2">
+                        <a
+                          href={`/capture/${profile.identityVerification.sessionReference}/assets/front.jpg`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium text-emerald-600 hover:underline dark:border-zinc-700 dark:bg-zinc-800 dark:text-emerald-400"
+                        >
+                          View Front ID ↗
+                        </a>
+                        <a
+                          href={`/capture/${profile.identityVerification.sessionReference}/assets/back.jpg`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium text-emerald-600 hover:underline dark:border-zinc-700 dark:bg-zinc-800 dark:text-emerald-400"
+                        >
+                          View Back ID ↗
+                        </a>
+                        <a
+                          href={`/capture/${profile.identityVerification.sessionReference}/assets/selfie_0.jpg`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium text-emerald-600 hover:underline dark:border-zinc-700 dark:bg-zinc-800 dark:text-emerald-400"
+                        >
+                          View Selfie ↗
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {['capture_required', 'processing', 'review'].includes(profile.identityVerification.status) && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-200 pt-2 dark:border-zinc-800">
+                      <button
+                        type="button"
+                        onClick={() => void approveIdentity()}
+                        className="rounded-lg bg-emerald-600 px-3 py-1.5 font-bold text-white shadow-xs hover:bg-emerald-500"
+                      >
+                        Approve Identity (Manual Override)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void resetIdentity()}
+                        className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 font-semibold text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                      >
+                        Request Recapture
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void refreshIdentity()}
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                      >
+                        Refresh Provider
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               {profile.onboarding && (

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { IDENTITY_POLICY_VERSION, requiredDocumentSides, identityFingerprint, evaluateIdentityDecision } from './identity-verification.js';
+import { IDENTITY_POLICY_VERSION, requiredDocumentSides, identityFingerprint, evaluateIdentityDecision, type IdentitySession } from './identity-verification.js';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -230,4 +230,97 @@ export class OnboardingService {
       throw new BadRequestException('Complete registration, identity verification, income details and wallet verification before applying');
     }
   }
+
+  async getBorrowersKycQueue() {
+    const users = await this.db.getRepository(User).find({
+      select: [...PROFILE_FIELDS],
+      where: { role: UserRole.BORROWER },
+      order: { createdAt: 'DESC' },
+    });
+    return users.map(user => {
+      const summary = this.identitySummary(user);
+      const ready = this.readiness(user);
+      return {
+        id: user.id,
+        phone: user.phone,
+        fullName: user.fullName,
+        email: user.email,
+        nationalId: user.nationalId,
+        kycStatus: user.kycStatus,
+        createdAt: user.createdAt,
+        onboarding: this.publicOnboarding(user),
+        identityVerification: {
+          ...summary,
+          sessionReference: user.onboarding?.identitySession?.sessionId,
+        },
+        ...ready,
+      };
+    });
+  }
+
+  async approveBorrowerIdentity(id: string, _adminIdentifier = 'admin') {
+    return this.db.transaction(async manager => {
+      const user = await manager.findOneOrFail(User, {
+        select: [...PROFILE_FIELDS],
+        where: { id, role: UserRole.BORROWER },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!user.isActive) throw new BadRequestException('Account is inactive');
+      if (!user.onboarding) throw new BadRequestException('Borrower has no onboarding profile');
+      const now = new Date().toISOString();
+      const session: IdentitySession = user.onboarding.identitySession || {
+        sessionId: `manual-${now.slice(0, 10)}`,
+        requestId: `manual-${now.slice(0, 10)}`,
+        policyVersion: IDENTITY_POLICY_VERSION,
+        profileFingerprint: identityFingerprint(user),
+        mode: 'live',
+        status: 'review',
+        hostedUrl: '',
+        createdAt: now,
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        consent: { version: 'admin-override', text: 'Admin manual approval', acceptedAt: now },
+      };
+      session.status = 'verified';
+      session.completedAt = now;
+      session.checkedAt = now;
+      session.checks = {
+        documentAuthenticity: true,
+        documentSides: true,
+        registrationMatch: true,
+        liveness: true,
+        faceMatch: true,
+      };
+      user.onboarding.identitySession = session;
+      user.onboarding.identity = {
+        verifiedAt: now,
+        reference: session.sessionId,
+        mode: session.mode,
+        policyVersion: IDENTITY_POLICY_VERSION,
+      };
+      user.kycStatus = KycStatus.VERIFIED;
+      await manager.save(user);
+      return this.profile(user.id, true);
+    });
+  }
+
+  async resetBorrowerIdentity(id: string, _reason?: string) {
+    return this.db.transaction(async manager => {
+      const user = await manager.findOneOrFail(User, {
+        select: [...PROFILE_FIELDS],
+        where: { id, role: UserRole.BORROWER },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (user.onboarding) {
+        if (user.onboarding.identitySession) {
+          user.onboarding.identitySession.status = 'capture_required';
+          user.onboarding.identitySession.expiresAt = new Date(0).toISOString();
+        }
+        user.onboarding.identity = undefined;
+      }
+      user.kycStatus = KycStatus.PENDING;
+      await manager.save(user);
+      return this.profile(user.id, true);
+    });
+  }
 }
+

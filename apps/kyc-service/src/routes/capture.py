@@ -44,6 +44,14 @@ def get_session_meta(session_id: str):
         "status": session.get("status", "capture_required")
     }
 
+@router.get("/{session_id}/assets/{asset_name}")
+def get_session_asset(session_id: str, asset_name: str):
+    data = store.get_asset_bytes(session_id, asset_name)
+    if not data:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    from fastapi.responses import Response
+    return Response(content=data, media_type="image/jpeg")
+
 @router.post("/{session_id}/upload")
 async def upload_capture_side(
     session_id: str,
