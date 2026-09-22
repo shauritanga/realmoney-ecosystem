@@ -172,8 +172,8 @@ export function UnderwritingPage() {
                         </div>
                       </div>
 
-                      {/* Expandable Borrower Review with Approval & Photo Buttons */}
-                      <BorrowerReview borrowerId={borrower.id} token={token} />
+                      {/* Borrower Review with Images Displayed Inline */}
+                      <BorrowerReview borrowerId={borrower.id} token={token} defaultOpen={true} />
                     </article>
                   );
                 })}

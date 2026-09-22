@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Location01Icon } from '@hugeicons/core-free-icons';
 
@@ -34,14 +34,23 @@ interface Profile {
 export function BorrowerReview({
   borrowerId,
   token,
+  defaultOpen = false,
 }: {
   borrowerId: string;
   token: string | null;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (defaultOpen && token) {
+      void load();
+    }
+  }, [defaultOpen, borrowerId, token]);
 
   async function load() {
     setOpen(true);
@@ -166,33 +175,130 @@ export function BorrowerReview({
                     ))}
                   </dl>}
                   {profile.identityVerification.sessionReference && (
-                    <div className="mt-2 space-y-1">
-                      <span className="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Captured Photos:</span>
-                      <div className="flex flex-wrap gap-2">
-                        <a
-                          href={`/capture/${profile.identityVerification.sessionReference}/assets/front.jpg`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium text-emerald-600 hover:underline dark:border-zinc-700 dark:bg-zinc-800 dark:text-emerald-400"
-                        >
-                          View Front ID ↗
-                        </a>
-                        <a
-                          href={`/capture/${profile.identityVerification.sessionReference}/assets/back.jpg`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium text-emerald-600 hover:underline dark:border-zinc-700 dark:bg-zinc-800 dark:text-emerald-400"
-                        >
-                          View Back ID ↗
-                        </a>
-                        <a
-                          href={`/capture/${profile.identityVerification.sessionReference}/assets/selfie_0.jpg`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium text-emerald-600 hover:underline dark:border-zinc-700 dark:bg-zinc-800 dark:text-emerald-400"
-                        >
-                          View Selfie ↗
-                        </a>
+                    <div className="mt-3 space-y-2">
+                      <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                        Captured Identity Documents &amp; Selfie:
+                      </span>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        {/* Front ID */}
+                        <div className="flex flex-col rounded-lg border border-zinc-200 bg-white p-2 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+                          <div className="mb-1.5 flex items-center justify-between text-[11px]">
+                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Front Document</span>
+                            <a
+                              href={`/capture/${profile.identityVerification.sessionReference}/assets/front.jpg`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] text-emerald-600 hover:underline dark:text-emerald-400"
+                            >
+                              Open ↗
+                            </a>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedImage(`/capture/${profile.identityVerification?.sessionReference}/assets/front.jpg`)}
+                            className="group relative flex h-36 w-full items-center justify-center overflow-hidden rounded-md bg-zinc-100 transition hover:ring-2 hover:ring-emerald-500 dark:bg-zinc-800"
+                            title="Click to view full size"
+                          >
+                            <img
+                              src={`/capture/${profile.identityVerification.sessionReference}/assets/front.jpg`}
+                              alt="Front Document"
+                              className="h-full w-full object-contain transition group-hover:scale-105"
+                              onError={(e) => {
+                                (e.currentTarget.parentElement as HTMLElement).innerHTML = '<span class="text-[11px] text-zinc-400">No front photo</span>';
+                              }}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Back ID */}
+                        <div className="flex flex-col rounded-lg border border-zinc-200 bg-white p-2 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+                          <div className="mb-1.5 flex items-center justify-between text-[11px]">
+                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Back Document</span>
+                            <a
+                              href={`/capture/${profile.identityVerification.sessionReference}/assets/back.jpg`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] text-emerald-600 hover:underline dark:text-emerald-400"
+                            >
+                              Open ↗
+                            </a>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedImage(`/capture/${profile.identityVerification?.sessionReference}/assets/back.jpg`)}
+                            className="group relative flex h-36 w-full items-center justify-center overflow-hidden rounded-md bg-zinc-100 transition hover:ring-2 hover:ring-emerald-500 dark:bg-zinc-800"
+                            title="Click to view full size"
+                          >
+                            <img
+                              src={`/capture/${profile.identityVerification.sessionReference}/assets/back.jpg`}
+                              alt="Back Document"
+                              className="h-full w-full object-contain transition group-hover:scale-105"
+                              onError={(e) => {
+                                (e.currentTarget.parentElement as HTMLElement).innerHTML = '<span class="text-[11px] text-zinc-400">No back photo</span>';
+                              }}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Live Selfie */}
+                        <div className="flex flex-col rounded-lg border border-zinc-200 bg-white p-2 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+                          <div className="mb-1.5 flex items-center justify-between text-[11px]">
+                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Live Selfie</span>
+                            <a
+                              href={`/capture/${profile.identityVerification.sessionReference}/assets/selfie_0.jpg`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] text-emerald-600 hover:underline dark:text-emerald-400"
+                            >
+                              Open ↗
+                            </a>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedImage(`/capture/${profile.identityVerification?.sessionReference}/assets/selfie_0.jpg`)}
+                            className="group relative flex h-36 w-full items-center justify-center overflow-hidden rounded-md bg-zinc-100 transition hover:ring-2 hover:ring-emerald-500 dark:bg-zinc-800"
+                            title="Click to view full size"
+                          >
+                            <img
+                              src={`/capture/${profile.identityVerification.sessionReference}/assets/selfie_0.jpg`}
+                              alt="Live Selfie"
+                              className="h-full w-full object-contain transition group-hover:scale-105"
+                              onError={(e) => {
+                                (e.currentTarget.parentElement as HTMLElement).innerHTML = '<span class="text-[11px] text-zinc-400">No selfie photo</span>';
+                              }}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedImage && (
+                    <div
+                      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs"
+                      onClick={() => setSelectedImage(null)}
+                    >
+                      <div
+                        className="relative max-h-[92vh] max-w-4xl overflow-hidden rounded-2xl bg-zinc-900 p-2 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="mb-2 flex items-center justify-between px-2 pt-1 text-white">
+                          <span className="text-xs font-semibold">Evidence Inspection</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedImage(null)}
+                            className="rounded-lg bg-zinc-800 px-2.5 py-1 text-xs font-bold text-zinc-300 hover:bg-zinc-700 hover:text-white"
+                          >
+                            Close ✕
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-center">
+                          <img
+                            src={selectedImage}
+                            alt="Enlarged evidence"
+                            className="max-h-[80vh] w-auto max-w-full rounded-lg object-contain shadow-lg"
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
