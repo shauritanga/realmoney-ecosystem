@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../services/api_service.dart';
 import '../theme/app_colors.dart';
+import 'native_camera_capture_screen.dart';
 
 /// Capture is performed by the approved provider; only the backend decides the result.
 class IdentityVerificationScreen extends StatefulWidget {
@@ -105,17 +105,28 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
     );
     if (!mounted) return;
     setState(() => _verification = session);
-    final url = session['hostedUrl'];
-    if (url == null) return;
-    final uri = Uri.tryParse(url as String);
-    if (uri == null ||
-        uri.scheme != 'https' ||
-        uri.host.isEmpty ||
-        uri.userInfo.isNotEmpty) {
-      throw Exception('Could not open secure verification. Please retry.');
+    final url = session['hostedUrl'] as String?;
+    if (url == null || url.isEmpty) {
+      throw Exception('Verification session is missing hosted URL.');
     }
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not open your browser. Please retry.');
+
+    final requiredSides = (session['requiredSides'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        ['front', 'back'];
+
+    final completed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => NativeCameraCaptureScreen(
+          sessionId: session['sessionId'] ?? '',
+          hostedUrl: url,
+          requiredSides: requiredSides,
+        ),
+      ),
+    );
+
+    if (completed == true) {
+      await _refresh();
     }
   });
 
@@ -285,13 +296,13 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                           _busy
                               ? 'Please wait…'
                               : _status == 'capture_required'
-                              ? 'Continue secure capture'
-                              : 'Start secure capture',
+                              ? 'Continue camera capture'
+                              : 'Start camera capture',
                         ),
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Capture opens in your browser. Return to RealMoney when finished.',
+                        'Opens your camera to scan your ID card and take a live selfie.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: AppColors.textMuted),
                       ),
