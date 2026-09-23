@@ -85,6 +85,15 @@ export class CollectionsController {
   }
 
   /**
+   * Admin: Unassign a loan from its current collector.
+   */
+  @Post('unassign')
+  @Roles(UserRole.ADMIN)
+  unassignLoan(@Body() body: { loanId: string }) {
+    return this.collectionsService.unassignLoan(body.loanId);
+  }
+
+  /**
    * Admin: Bulk-assign up to `limit` unassigned loans of ONE level —
    * e.g. 45x T1 cases to one collector for the day.
    */
@@ -98,7 +107,7 @@ export class CollectionsController {
       body.collectorId,
       body.level,
       req.user.id,
-      body.limit ?? 50,
+      body.limit ?? 45,
     );
   }
 }

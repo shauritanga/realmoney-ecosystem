@@ -23,6 +23,7 @@ import {
   daysToDue,
   getCollectionLevel,
   isQueueableLevel,
+  maxCapacityForLevel,
 } from './collection-level.js';
 
 const WORKABLE_STATUSES = [LoanStatus.ACTIVE, LoanStatus.OVERDUE, LoanStatus.DEFAULTED];
@@ -288,6 +289,18 @@ export class CollectionsService {
       throw new BadRequestException(e.message);
     }
 
+    const maxCap = maxCapacityForLevel(newLevel);
+    if (maxCap !== null) {
+      const activeCount = await this.assignments.count({
+        where: { collectorId, isActive: true },
+      });
+      if (activeCount >= maxCap) {
+        throw new BadRequestException(
+          `Collector capacity reached. Maximum ${maxCap} accounts can be assigned for tier ${LEVEL_LABEL[newLevel]}.`,
+        );
+      }
+    }
+
     // Deactivate previous active assignment
     await this.assignments.update(
       { loanId, isActive: true },
@@ -305,15 +318,26 @@ export class CollectionsService {
   }
 
   /**
+   * Admin: Unassign a loan from its active collector.
+   */
+  async unassignLoan(loanId: string) {
+    const res = await this.assignments.update(
+      { loanId, isActive: true },
+      { isActive: false, reassignedAt: new Date() },
+    );
+    return { success: true, affected: res.affected || 0 };
+  }
+
+  /**
    * Admin: Bulk-assign up to `limit` unassigned loans of ONE level to a
    * collector — e.g. "give Neema 45x T1 cases for today". Biggest balances
-   * first. The no-mix rule applies.
+   * first. The no-mix rule and max 45 rule (for tiers other than S) apply.
    */
   async autoAssignLevel(
     collectorId: string,
     level: CollectionLevel,
     adminId: string,
-    limit = 50,
+    limit = 45,
   ) {
     if (!COLLECTION_LEVELS.includes(level)) {
       throw new BadRequestException(`Unknown collection level: ${level}`);
@@ -322,6 +346,21 @@ export class CollectionsService {
       assertNoLevelMix(await this.workedLevels(collectorId), level);
     } catch (e: any) {
       throw new BadRequestException(e.message);
+    }
+
+    const maxCap = maxCapacityForLevel(level);
+    let effectiveLimit = limit;
+    if (maxCap !== null) {
+      const activeCount = await this.assignments.count({
+        where: { collectorId, isActive: true },
+      });
+      const remaining = maxCap - activeCount;
+      if (remaining <= 0) {
+        throw new BadRequestException(
+          `Collector already has ${activeCount} accounts assigned. Maximum allowed for tier ${LEVEL_LABEL[level]} is ${maxCap}.`,
+        );
+      }
+      effectiveLimit = Math.min(limit, remaining);
     }
 
     // Candidates: workable, owing, with no active assignment.
@@ -343,7 +382,7 @@ export class CollectionsService {
     const now = new Date();
     const matching = candidates
       .filter((l) => getCollectionLevel(l.dueDate, now) === level)
-      .slice(0, Math.max(1, Math.min(limit, 500)));
+      .slice(0, Math.max(1, Math.min(effectiveLimit, 500)));
 
     const created = await this.assignments.save(
       matching.map((l) =>

@@ -19,12 +19,12 @@ interface HeaderProps {
 }
 
 const pageTitles: Record<string, string> = {
-  '/': 'Portfolio overview',
+  '/': 'Overview',
   '/kyc': 'Identity & KYC',
   '/underwriting': 'Loan Underwriting',
-  '/collections': 'Collection operations',
-  '/ledger': 'Financial ledger',
-  '/settings': 'Lending settings',
+  '/collections': 'Collections',
+  '/ledger': 'Accounting',
+  '/settings': 'Settings',
 };
 
 export function Header({

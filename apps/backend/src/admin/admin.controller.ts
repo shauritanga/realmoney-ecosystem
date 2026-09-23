@@ -50,6 +50,11 @@ export class AdminController {
     return this.adminService.getCollectors();
   }
 
+  @Post('collectors')
+  createCollector(@Body() body: { fullName: string; phone: string; email?: string; password: string }) {
+    return this.adminService.createCollector(body);
+  }
+
   @Get('ledger')
   getLedger(@Query('limit') limit?: string) {
     return this.adminService.getLedgerEntries(limit ? parseInt(limit, 10) : 50);

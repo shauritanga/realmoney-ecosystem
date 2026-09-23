@@ -4,6 +4,7 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
 import { LoginPage } from '../pages/LoginPage';
 import { OverviewPage } from '../pages/OverviewPage';
 import { KycPage } from '../pages/KycPage';
+import { KycDetailPage } from '../pages/KycDetailPage';
 import { UnderwritingPage } from '../pages/UnderwritingPage';
 import { CollectionsPage } from '../pages/CollectionsPage';
 import { LedgerPage } from '../pages/LedgerPage';
@@ -34,6 +35,7 @@ export function AppRoutes() {
       >
         <Route index element={<OverviewPage />} />
         <Route path="kyc" element={<KycPage />} />
+        <Route path="kyc/:id" element={<KycDetailPage />} />
         <Route path="underwriting" element={<UnderwritingPage />} />
         <Route path="collections" element={<CollectionsPage />} />
         <Route path="ledger" element={<LedgerPage />} />

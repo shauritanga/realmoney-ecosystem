@@ -23,11 +23,11 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { to: '/', label: 'Portfolio overview', icon: DashboardSquare01Icon },
+  { to: '/', label: 'Overview', icon: DashboardSquare01Icon },
   { to: '/kyc', label: 'Identity & KYC', icon: UserCheck01Icon },
   { to: '/underwriting', label: 'Loan Underwriting', icon: Coins01Icon, badge: 'loans' },
-  { to: '/collections', label: 'Collection operations', icon: CallIcon, badge: 'collections' },
-  { to: '/ledger', label: 'Financial ledger', icon: BookOpen01Icon },
+  { to: '/collections', label: 'Collections', icon: CallIcon, badge: 'collections' },
+  { to: '/ledger', label: 'Accounting', icon: BookOpen01Icon },
 ];
 
 export function Sidebar({

@@ -75,10 +75,10 @@ export function LendingSettings({ token }: { token: string | null }) {
     <Panel className="max-w-2xl space-y-6">
       <div>
         <h2 id="settings-heading" className="text-xl font-semibold text-zinc-900 dark:text-white">
-          Lending settings
+          Settings
         </h2>
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          Set the interest rate for new loan applications across all products.
+          Configure platform lending rates and loan application parameters.
         </p>
       </div>
 

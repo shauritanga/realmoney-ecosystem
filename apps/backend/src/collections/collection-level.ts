@@ -39,19 +39,29 @@ export const LEVEL_LABEL: Record<CollectionLevel, string> = {
   [CollectionLevel.ZERO]: 'T0',
   [CollectionLevel.T1]: 'T1',
   [CollectionLevel.T2]: 'T2',
-  [CollectionLevel.T3]: 'T3',
+  [CollectionLevel.T3]: 'S',
   [CollectionLevel.UPCOMING]: 'Upcoming',
 };
 
 export const LEVEL_DESCRIPTION: Record<CollectionLevel, string> = {
-  [CollectionLevel.M2]: 'Due in 2 days — friendly early reminder.',
-  [CollectionLevel.M1]: 'Due tomorrow — payment reminder, offer USSD push.',
-  [CollectionLevel.ZERO]: 'Due TODAY — collect a promise, push USSD.',
-  [CollectionLevel.T1]: '1 day overdue — firm follow-up.',
-  [CollectionLevel.T2]: '2 days overdue — escalate tone, push USSD.',
-  [CollectionLevel.T3]: '3+ days overdue — intensive recovery.',
+  [CollectionLevel.M2]: 'Due in 2 days — friendly early reminder (max 45).',
+  [CollectionLevel.M1]: 'Due tomorrow — payment reminder, offer USSD push (max 45).',
+  [CollectionLevel.ZERO]: 'Due TODAY — collect a promise, push USSD (max 45).',
+  [CollectionLevel.T1]: '1 day overdue — firm follow-up (max 45).',
+  [CollectionLevel.T2]: '2 days overdue — escalate tone, push USSD (max 45).',
+  [CollectionLevel.T3]: '3+ days overdue — intensive recovery (S tier, unlimited).',
   [CollectionLevel.UPCOMING]: 'Not yet due — not in any daily queue.',
 };
+
+/**
+ * Enforces per-collector capacity:
+ * Up to 45 borrowers/loans for tiers T-2, T-1, T0, T1, T2.
+ * Tier S (3+ days past due) has no 45 limit.
+ */
+export function maxCapacityForLevel(level: CollectionLevel): number | null {
+  if (level === CollectionLevel.T3) return null;
+  return 45;
+}
 
 /** UTC calendar-day truncation: levels must not depend on server timezone. */
 function startOfDay(d: Date): Date {
