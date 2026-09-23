@@ -1,6 +1,6 @@
 import { OnboardingService } from '../onboarding/onboarding.service.js';
 import { SettingsService } from '../settings/settings.service.js';
-import { Controller, Get, UseGuards, Query, Put, Body, Param, Post } from '@nestjs/common';
+import { Controller, Get, UseGuards, Query, Put, Body, Param, Post, Patch } from '@nestjs/common';
 import { AdminService } from './admin.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
@@ -53,6 +53,11 @@ export class AdminController {
   @Post('collectors')
   createCollector(@Body() body: { fullName: string; phone: string; email?: string; password: string }) {
     return this.adminService.createCollector(body);
+  }
+
+  @Patch('collectors/:id/status')
+  toggleCollectorStatus(@Param('id') id: string) {
+    return this.adminService.toggleCollectorStatus(id);
   }
 
   @Get('ledger')

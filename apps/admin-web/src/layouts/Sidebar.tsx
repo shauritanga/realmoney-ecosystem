@@ -7,6 +7,7 @@ import {
   Coins01Icon,
   DashboardSquare01Icon,
   UserCheck01Icon,
+  UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 import { AccountMenu } from '../components/AccountMenu';
 import { useDashboardData } from '../hooks';
@@ -27,6 +28,7 @@ const navItems = [
   { to: '/kyc', label: 'Identity & KYC', icon: UserCheck01Icon },
   { to: '/underwriting', label: 'Loan Underwriting', icon: Coins01Icon, badge: 'loans' },
   { to: '/collections', label: 'Collections', icon: CallIcon, badge: 'collections' },
+  { to: '/collectors', label: 'Collectors', icon: UserGroupIcon },
   { to: '/ledger', label: 'Accounting', icon: BookOpen01Icon },
 ];
 

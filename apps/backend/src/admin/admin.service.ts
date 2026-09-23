@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -101,7 +101,7 @@ export class AdminService {
   async getCollectors() {
     const collectors = await this.users.find({
       where: { role: UserRole.COLLECTOR },
-      relations: { assignedLoans: { loan: true } },
+      relations: { assignedLoans: { loan: { borrower: true } } },
     });
 
     const now = new Date();
@@ -136,8 +136,26 @@ export class AdminService {
         workedLevel,
         workedLevelLabel,
         maxCapacity: maxCap,
+        assignedLoans: activeAssignments.map((a) => ({
+          id: a.id,
+          loanId: a.loan.id,
+          loanNumber: a.loan.loanNumber,
+          borrowerName: a.loan.borrower?.fullName || 'Borrower',
+          borrowerPhone: a.loan.borrower?.phone || '',
+          outstandingBalance: Number(a.loan.outstandingBalance),
+          dueDate: a.loan.dueDate,
+          assignedAt: a.assignedAt,
+        })),
       };
     });
+  }
+
+  async toggleCollectorStatus(id: string) {
+    const collector = await this.users.findOne({ where: { id, role: UserRole.COLLECTOR } });
+    if (!collector) throw new NotFoundException('Collector not found');
+    collector.isActive = !collector.isActive;
+    await this.users.save(collector);
+    return { id: collector.id, isActive: collector.isActive };
   }
 
   async createCollector(dto: { fullName: string; phone: string; email?: string; password: string }) {

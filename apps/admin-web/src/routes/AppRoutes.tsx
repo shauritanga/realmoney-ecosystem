@@ -7,6 +7,7 @@ import { KycPage } from '../pages/KycPage';
 import { KycDetailPage } from '../pages/KycDetailPage';
 import { UnderwritingPage } from '../pages/UnderwritingPage';
 import { CollectionsPage } from '../pages/CollectionsPage';
+import { CollectorsPage } from '../pages/CollectorsPage';
 import { LedgerPage } from '../pages/LedgerPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { useAuth } from '../hooks/useAuth';
@@ -38,6 +39,7 @@ export function AppRoutes() {
         <Route path="kyc/:id" element={<KycDetailPage />} />
         <Route path="underwriting" element={<UnderwritingPage />} />
         <Route path="collections" element={<CollectionsPage />} />
+        <Route path="collectors" element={<CollectorsPage />} />
         <Route path="ledger" element={<LedgerPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

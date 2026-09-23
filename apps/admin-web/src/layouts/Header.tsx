@@ -23,6 +23,7 @@ const pageTitles: Record<string, string> = {
   '/kyc': 'Identity & KYC',
   '/underwriting': 'Loan Underwriting',
   '/collections': 'Collections',
+  '/collectors': 'Collectors',
   '/ledger': 'Accounting',
   '/settings': 'Settings',
 };
