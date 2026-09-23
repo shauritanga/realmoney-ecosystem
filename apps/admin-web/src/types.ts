@@ -1,4 +1,4 @@
-export type Tab = 'overview' | 'underwriting' | 'collections' | 'ledger' | 'settings';
+export type Tab = 'overview' | 'kyc' | 'underwriting' | 'collections' | 'ledger' | 'settings';
 
 export interface DashboardStats {
   totalLoans: number;

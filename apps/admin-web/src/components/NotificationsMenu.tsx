@@ -5,8 +5,8 @@ import {
   ArrowRight01Icon,
   CallIcon,
   CheckmarkCircle02Icon,
+  Coins01Icon,
   Notification01Icon,
-  UserCheck01Icon,
 } from '@hugeicons/core-free-icons';
 import { useClickOutside, useDashboardData } from '../hooks';
 
@@ -118,7 +118,7 @@ export function NotificationsMenu({
                 className="group flex w-full items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 text-left transition-all hover:border-amber-300 hover:bg-amber-100/70 dark:border-amber-950/80 dark:bg-amber-950/20 dark:hover:border-amber-800 dark:hover:bg-amber-950/40"
               >
                 <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400">
-                  <HugeiconsIcon icon={UserCheck01Icon} size={14} />
+                  <HugeiconsIcon icon={Coins01Icon} size={14} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">

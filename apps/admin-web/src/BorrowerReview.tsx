@@ -35,10 +35,14 @@ export function BorrowerReview({
   borrowerId,
   token,
   defaultOpen = false,
+  mode = 'all',
+  onActionComplete,
 }: {
   borrowerId: string;
   token: string | null;
   defaultOpen?: boolean;
+  mode?: 'all' | 'kyc' | 'affordability';
+  onActionComplete?: () => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -78,6 +82,7 @@ export function BorrowerReview({
       });
       if (!response.ok) throw new Error('Unable to refresh verification. Please retry.');
       await load();
+      onActionComplete?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to refresh verification');
     } finally { setLoading(false); }
@@ -93,6 +98,7 @@ export function BorrowerReview({
       });
       if (!response.ok) throw new Error('Unable to approve identity. Please retry.');
       await load();
+      onActionComplete?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to approve identity');
     } finally {
@@ -111,6 +117,7 @@ export function BorrowerReview({
       });
       if (!response.ok) throw new Error('Unable to reset identity. Please retry.');
       await load();
+      onActionComplete?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to reset identity');
     } finally {
@@ -120,6 +127,19 @@ export function BorrowerReview({
 
   const financial = profile?.onboarding?.financial;
 
+  const toggleLabel =
+    mode === 'affordability'
+      ? open
+        ? 'Hide affordability analysis'
+        : 'Review credit affordability & income'
+      : mode === 'kyc'
+      ? open
+        ? 'Hide identity verification evidence'
+        : 'Inspect KYC evidence & documents'
+      : open
+      ? 'Hide borrower review'
+      : 'Review identity and affordability';
+
   return (
     <div className="mt-3 max-w-xl text-sm">
       <button
@@ -128,7 +148,7 @@ export function BorrowerReview({
         onClick={() => (open ? setOpen(false) : void load())}
         className="text-xs font-semibold text-emerald-600 underline underline-offset-4 transition hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
       >
-        {open ? 'Hide borrower review' : 'Review identity and affordability'}
+        {toggleLabel}
       </button>
 
       {open && (
@@ -164,7 +184,7 @@ export function BorrowerReview({
                   {profile.financialComplete ? 'Current' : 'Missing or expired'}
                 </strong>
               </p>
-              {profile.identityVerification && (
+              {profile.identityVerification && mode !== 'affordability' && (
                 <div className="space-y-2">
                   <p>Document &amp; live selfie: <strong>{profile.identityVerification.status.replaceAll('_', ' ')}</strong></p>
                   {profile.identityVerification.mode === 'development' && <p className="text-amber-700">Development evidence — not live verification.</p>}
@@ -330,41 +350,64 @@ export function BorrowerReview({
                   )}
                 </div>
               )}
+              {profile.identityVerification && mode === 'affordability' && (
+                <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-2.5 text-xs dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="flex items-center gap-2">
+                    <span className="text-zinc-500 dark:text-zinc-400">KYC Status:</span>
+                    <strong className="capitalize text-zinc-900 dark:text-white">
+                      {profile.identityVerification.status.replaceAll('_', ' ')}
+                    </strong>
+                    {profile.identityVerified && (
+                      <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                        Passed
+                      </span>
+                    )}
+                  </div>
+                  <a
+                    href="/kyc"
+                    className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                  >
+                    Open KYC Console ↗
+                  </a>
+                </div>
+              )}
               {profile.onboarding && (
                 <p className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
                   <HugeiconsIcon icon={Location01Icon} size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
                   <span>{[profile.onboarding.region, profile.onboarding.district, profile.onboarding.ward, profile.onboarding.street].join(', ')}</span>
                 </p>
               )}
-              {financial ? (
-                <>
-                  <p className="font-medium text-zinc-900 dark:text-white">
-                    {financial.occupation} · {financial.employmentStatus.replaceAll('_', ' ').toLowerCase()}
-                  </p>
-                  <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
-                    <dt className="text-zinc-500 dark:text-zinc-400">Monthly income</dt>
-                    <dd className="font-semibold text-zinc-900 dark:text-white">
-                      TZS {Number(financial.monthlyIncome).toLocaleString()}
-                    </dd>
-                    <dt className="text-zinc-500 dark:text-zinc-400">Essential expenses</dt>
-                    <dd className="font-semibold text-zinc-900 dark:text-white">
-                      TZS {Number(financial.essentialExpenses).toLocaleString()}
-                    </dd>
-                    <dt className="text-zinc-500 dark:text-zinc-400">Existing loan repayments</dt>
-                    <dd className="font-semibold text-zinc-900 dark:text-white">
-                      TZS {Number(financial.existingLoanRepayments).toLocaleString()}
-                    </dd>
-                    <dt className="text-zinc-500 dark:text-zinc-400">Remaining monthly income</dt>
-                    <dd className="font-semibold text-emerald-600 dark:text-emerald-400">
-                      TZS {(financial.monthlyIncome - financial.essentialExpenses - financial.existingLoanRepayments).toLocaleString()}
-                    </dd>
-                  </dl>
-                  <p className="border-t border-zinc-200 pt-2 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-                    Borrower-declared figures, updated {new Date(financial.updatedAt).toLocaleDateString()}. Assess affordability for this loan’s actual repayment period before approval.
-                  </p>
-                </>
-              ) : (
-                <p className="text-zinc-500 dark:text-zinc-400">No income information submitted.</p>
+              {mode !== 'kyc' && (
+                financial ? (
+                  <>
+                    <p className="font-medium text-zinc-900 dark:text-white">
+                      {financial.occupation} · {financial.employmentStatus.replaceAll('_', ' ').toLowerCase()}
+                    </p>
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                      <dt className="text-zinc-500 dark:text-zinc-400">Monthly income</dt>
+                      <dd className="font-semibold text-zinc-900 dark:text-white">
+                        TZS {Number(financial.monthlyIncome).toLocaleString()}
+                      </dd>
+                      <dt className="text-zinc-500 dark:text-zinc-400">Essential expenses</dt>
+                      <dd className="font-semibold text-zinc-900 dark:text-white">
+                        TZS {Number(financial.essentialExpenses).toLocaleString()}
+                      </dd>
+                      <dt className="text-zinc-500 dark:text-zinc-400">Existing loan repayments</dt>
+                      <dd className="font-semibold text-zinc-900 dark:text-white">
+                        TZS {Number(financial.existingLoanRepayments).toLocaleString()}
+                      </dd>
+                      <dt className="text-zinc-500 dark:text-zinc-400">Remaining monthly income</dt>
+                      <dd className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        TZS {(financial.monthlyIncome - financial.essentialExpenses - financial.existingLoanRepayments).toLocaleString()}
+                      </dd>
+                    </dl>
+                    <p className="border-t border-zinc-200 pt-2 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                      Borrower-declared figures, updated {new Date(financial.updatedAt).toLocaleDateString()}. Assess affordability for this loan’s actual repayment period before approval.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-zinc-500 dark:text-zinc-400">No income information submitted.</p>
+                )
               )}
             </>
           )}

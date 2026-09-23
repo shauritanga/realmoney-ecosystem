@@ -3,6 +3,7 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { LoginPage } from '../pages/LoginPage';
 import { OverviewPage } from '../pages/OverviewPage';
+import { KycPage } from '../pages/KycPage';
 import { UnderwritingPage } from '../pages/UnderwritingPage';
 import { CollectionsPage } from '../pages/CollectionsPage';
 import { LedgerPage } from '../pages/LedgerPage';
@@ -32,6 +33,7 @@ export function AppRoutes() {
         }
       >
         <Route index element={<OverviewPage />} />
+        <Route path="kyc" element={<KycPage />} />
         <Route path="underwriting" element={<UnderwritingPage />} />
         <Route path="collections" element={<CollectionsPage />} />
         <Route path="ledger" element={<LedgerPage />} />

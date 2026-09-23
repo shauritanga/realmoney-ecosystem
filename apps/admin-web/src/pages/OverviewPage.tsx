@@ -211,11 +211,11 @@ export function OverviewPage() {
         <QueuePanel
           title="Decisions waiting"
           detail={`${pendingLoans.length} pending applications`}
-          action="Open desk"
+          action="Open underwriting"
           onClick={() => navigate('/underwriting')}
           loans={pendingLoans}
           emptyTitle="No pending decisions"
-          emptyDetail="The underwriting queue is clear."
+          emptyDetail="The loan underwriting queue is clear."
         />
         <QueuePanel
           title="Recovery watch"
@@ -236,7 +236,7 @@ export function OverviewPage() {
           detail={`${loans.length} records across all statuses`}
           action={
             <ViewButton onClick={() => navigate('/underwriting')}>
-              View underwriting
+              View loan underwriting
             </ViewButton>
           }
         />

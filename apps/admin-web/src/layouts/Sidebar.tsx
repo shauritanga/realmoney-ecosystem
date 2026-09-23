@@ -4,6 +4,7 @@ import {
   BookOpen01Icon,
   CallIcon,
   Cancel01Icon,
+  Coins01Icon,
   DashboardSquare01Icon,
   UserCheck01Icon,
 } from '@hugeicons/core-free-icons';
@@ -23,8 +24,9 @@ interface SidebarProps {
 
 const navItems = [
   { to: '/', label: 'Portfolio overview', icon: DashboardSquare01Icon },
-  { to: '/underwriting', label: 'Underwriting desk', icon: UserCheck01Icon },
-  { to: '/collections', label: 'Collection operations', icon: CallIcon, hasBadge: true },
+  { to: '/kyc', label: 'Identity & KYC', icon: UserCheck01Icon },
+  { to: '/underwriting', label: 'Loan Underwriting', icon: Coins01Icon, badge: 'loans' },
+  { to: '/collections', label: 'Collection operations', icon: CallIcon, badge: 'collections' },
   { to: '/ledger', label: 'Financial ledger', icon: BookOpen01Icon },
 ];
 
@@ -38,7 +40,7 @@ export function Sidebar({
   onOpenProfile,
   onLogout,
 }: SidebarProps) {
-  const { overdueLoans } = useDashboardData();
+  const { overdueLoans, pendingLoans } = useDashboardData();
 
   return (
     <>
@@ -84,46 +86,59 @@ export function Sidebar({
           className="mt-7 flex flex-1 flex-col gap-1 overflow-y-auto"
           aria-label="Primary navigation"
         >
-          {navItems.map(({ to, label, icon: Icon, hasBadge }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              onClick={onCloseMobile}
-              title={!desktopOpen ? label : undefined}
-              className={({ isActive }) =>
-                `relative flex items-center rounded-xl text-xs transition ${
-                  desktopOpen
-                    ? 'gap-3 px-3 py-2.5 text-left'
-                    : 'justify-center p-2.5'
-                } ${
-                  isActive
-                    ? 'border border-emerald-300 bg-emerald-50/90 font-semibold text-emerald-800 shadow-xs dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-400'
-                    : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
-                }`
-              }
-            >
-              <HugeiconsIcon icon={Icon} size={18} className="shrink-0" />
-              {desktopOpen ? (
-                <>
-                  <span className="min-w-0 flex-1 truncate">{label}</span>
-                  {hasBadge && overdueLoans.length > 0 && (
-                    <b className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] text-rose-700 dark:bg-rose-950 dark:text-rose-300">
-                      {overdueLoans.length}
-                    </b>
-                  )}
-                </>
-              ) : (
-                hasBadge &&
-                overdueLoans.length > 0 && (
-                  <span
-                    className="absolute right-1.5 top-1.5 size-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-black"
-                    title={`${overdueLoans.length} overdue`}
-                  />
-                )
-              )}
-            </NavLink>
-          ))}
+          {navItems.map(({ to, label, icon: Icon, badge }) => {
+            const badgeCount =
+              badge === 'loans'
+                ? pendingLoans.length
+                : badge === 'collections'
+                ? overdueLoans.length
+                : 0;
+            const badgeColor =
+              badge === 'loans'
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300';
+            const dotColor = badge === 'loans' ? 'bg-amber-500' : 'bg-rose-500';
+
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/'}
+                onClick={onCloseMobile}
+                title={!desktopOpen ? label : undefined}
+                className={({ isActive }) =>
+                  `relative flex items-center rounded-xl text-xs transition ${
+                    desktopOpen
+                      ? 'gap-3 px-3 py-2.5 text-left'
+                      : 'justify-center p-2.5'
+                  } ${
+                    isActive
+                      ? 'border border-emerald-300 bg-emerald-50/90 font-semibold text-emerald-800 shadow-xs dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-400'
+                      : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
+                  }`
+                }
+              >
+                <HugeiconsIcon icon={Icon} size={18} className="shrink-0" />
+                {desktopOpen ? (
+                  <>
+                    <span className="min-w-0 flex-1 truncate">{label}</span>
+                    {badgeCount > 0 && (
+                      <b className={`rounded-full px-2 py-0.5 text-[10px] ${badgeColor}`}>
+                        {badgeCount}
+                      </b>
+                    )}
+                  </>
+                ) : (
+                  badgeCount > 0 && (
+                    <span
+                      className={`absolute right-1.5 top-1.5 size-2 rounded-full ${dotColor} ring-2 ring-white dark:ring-black`}
+                      title={`${badgeCount} items`}
+                    />
+                  )
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* Bottom of Sidebar: Popup Account Menu Dock */}

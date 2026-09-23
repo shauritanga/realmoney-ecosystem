@@ -20,7 +20,8 @@ interface HeaderProps {
 
 const pageTitles: Record<string, string> = {
   '/': 'Portfolio overview',
-  '/underwriting': 'Underwriting desk',
+  '/kyc': 'Identity & KYC',
+  '/underwriting': 'Loan Underwriting',
   '/collections': 'Collection operations',
   '/ledger': 'Financial ledger',
   '/settings': 'Lending settings',
