@@ -8,12 +8,14 @@ import {
 } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
-import type { DashboardStats, LedgerEntry, Loan } from '../types';
+import type { CollectionAlerts, DashboardStats, LedgerEntry, Loan } from '../types';
 
 export interface DataContextType {
   stats: DashboardStats | null;
   loans: Loan[];
   ledger: LedgerEntry[];
+  /** Cheap counts for the sidebar badge; null until the first load resolves. */
+  collectionAlerts: CollectionAlerts | null;
   overdueLoans: Loan[];
   pendingLoans: Loan[];
   recoveryRate: number;
@@ -24,7 +26,32 @@ export interface DataContextType {
   dismissNotice: () => void;
   refresh: () => Promise<void>;
   approveOrDisburse: (path: string) => Promise<void>;
-  pushPayment: (loanId: string, amount: number) => Promise<void>;
+  pushPayment: (args: PushPaymentArgs) => Promise<void>;
+  extendLoan: (args: ExtendLoanArgs) => Promise<void>;
+  extensionQuote: (loanId: string) => Promise<ExtensionQuote | null>;
+}
+
+/** `payerPhone` prompts someone other than the borrower. */
+export interface PushPaymentArgs {
+  loanId: string;
+  amount: number;
+  payerPhone?: string;
+  payerName?: string;
+}
+
+/** No amount: the server prices the fee from the current balance. */
+export interface ExtendLoanArgs {
+  loanId: string;
+  payerPhone?: string;
+  payerName?: string;
+}
+
+export interface ExtensionQuote {
+  fee: number;
+  newDueDate: string;
+  extensionsRemaining: number;
+  eligible: boolean;
+  reason: string | null;
 }
 
 export const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -33,6 +60,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const { token } = useAuth();
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [collectionAlerts, setCollectionAlerts] = useState<CollectionAlerts | null>(null);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,14 +83,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const [nextStats, nextLoans, nextLedger] = await Promise.all([
+      const [nextStats, nextLoans, nextLedger, nextAlerts] = await Promise.all([
         apiClient<DashboardStats>('/admin/dashboard-stats', { token }),
         apiClient<Loan[]>('/loans', { token }),
         apiClient<LedgerEntry[]>('/admin/ledger', { token }),
+        // Cheap enough to join the global refresh, and the sidebar badge needs it on
+        // every page. A failure here must not blank the whole dashboard.
+        apiClient<CollectionAlerts>('/admin/collections/alerts', { token }).catch(
+          () => null,
+        ),
       ]);
       setStats(nextStats);
       setLoans(nextLoans);
       setLedger(nextLedger);
+      setCollectionAlerts(nextAlerts);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Unable to load operations data.'
@@ -79,6 +113,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setStats(null);
       setLoans([]);
       setLedger([]);
+      setCollectionAlerts(null);
     }
   }, [token, refresh]);
 
@@ -116,23 +151,65 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const pushPayment = useCallback(
-    async (loanId: string, amount: number) => {
+    async ({ loanId, amount, payerPhone, payerName }: PushPaymentArgs) => {
       try {
         const data = await apiClient<{ success: boolean; message?: string; orderId: string }>(
           '/collections/trigger-payment',
           {
             method: 'POST',
             token,
-            body: JSON.stringify({ loanId, amount }),
+            body: JSON.stringify({ loanId, amount, payerPhone, payerName }),
           }
         );
         if (!data.success) throw new Error(data.message || 'USSD prompt failed.');
-        notify(`USSD prompt sent: ${data.orderId}`);
+        notify(
+          payerPhone
+            ? `Prompt sent to ${payerPhone}: ${data.orderId}`
+            : `USSD prompt sent: ${data.orderId}`
+        );
       } catch (err) {
         notify(err instanceof Error ? err.message : 'USSD prompt failed.');
       }
     },
     [token, notify]
+  );
+
+  /**
+   * Offers an extension. The due date does not move here -- it moves when the fee is
+   * actually paid, so the list is refreshed rather than optimistically updated.
+   */
+  const extendLoan = useCallback(
+    async ({ loanId, payerPhone, payerName }: ExtendLoanArgs) => {
+      try {
+        const data = await apiClient<{
+          success: boolean;
+          message?: string;
+          orderId: string;
+          fee: number;
+          newDueDate: string;
+        }>('/collections/extend-loan', {
+          method: 'POST',
+          token,
+          body: JSON.stringify({ loanId, payerPhone, payerName }),
+        });
+        if (!data.success) throw new Error(data.message || 'Extension request failed.');
+        notify(
+          `Extension fee of ${Math.round(data.fee).toLocaleString('en-US')} requested. ` +
+            'The due date moves once it is paid.'
+        );
+        await refresh();
+      } catch (err) {
+        notify(err instanceof Error ? err.message : 'Extension request failed.');
+      }
+    },
+    [token, notify, refresh]
+  );
+
+  /** Read-only: nothing is charged, so a failure here is surfaced to the caller. */
+  const extensionQuote = useCallback(
+    async (loanId: string) =>
+      apiClient<ExtensionQuote>(`/collections/cases/${loanId}/extension-quote`, { token }),
+    [token]
   );
 
   return (
@@ -141,6 +218,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         stats,
         loans,
         ledger,
+        collectionAlerts,
         overdueLoans,
         pendingLoans,
         recoveryRate,
@@ -152,6 +230,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         refresh,
         approveOrDisburse,
         pushPayment,
+        extendLoan,
+        extensionQuote,
       }}
     >
       {children}

@@ -12,54 +12,18 @@ import {
 import { money } from '../lib/format';
 import { EmptyState, PageHeading, Panel } from '../components/ui';
 import { useDashboardData, useAuth } from '../hooks';
-import type { Loan } from '../types';
+import type { Collector, Loan } from '../types';
+import { TIERS, getLoanTier, type CollectionTier } from '../lib/collectionTiers';
+import { PushPaymentModal, type PushTarget } from '../components/PushPaymentModal';
 
-interface Collector {
-  id: string;
-  fullName: string;
-  phone: string;
-  email: string | null;
-  isActive: boolean;
-  activeAssignmentsCount: number;
-  workedLevel: string | null;
-  workedLevelLabel: string | null;
-  maxCapacity: number | null;
-}
-
-type CollectionTier = 'M2' | 'M1' | 'ZERO' | 'T1' | 'T2' | 'T3';
-
-const TIERS: { key: CollectionTier; label: string; desc: string; max: number | null }[] = [
-  { key: 'M2', label: 'T-2', desc: 'Due in 2 days (max 45)', max: 45 },
-  { key: 'M1', label: 'T-1', desc: 'Due tomorrow (max 45)', max: 45 },
-  { key: 'ZERO', label: 'T0', desc: 'Due today (max 45)', max: 45 },
-  { key: 'T1', label: 'T1', desc: '1 day overdue (max 45)', max: 45 },
-  { key: 'T2', label: 'T2', desc: '2 days overdue (max 45)', max: 45 },
-  { key: 'T3', label: 'S', desc: '3+ days overdue (unlimited)', max: null },
-];
-
-function getLoanTier(dueDateStr: string): { key: CollectionTier; label: string } | null {
-  if (!dueDateStr) return null;
-  const now = new Date();
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).getTime();
-  const due = new Date(dueDateStr);
-  const dueDay = new Date(Date.UTC(due.getUTCFullYear(), due.getUTCMonth(), due.getUTCDate())).getTime();
-  const diffDays = Math.round((dueDay - today) / 86400000);
-
-  if (diffDays > 2) return null;
-  if (diffDays === 2) return { key: 'M2', label: 'T-2' };
-  if (diffDays === 1) return { key: 'M1', label: 'T-1' };
-  if (diffDays === 0) return { key: 'ZERO', label: 'T0' };
-  if (diffDays === -1) return { key: 'T1', label: 'T1' };
-  if (diffDays === -2) return { key: 'T2', label: 'T2' };
-  return { key: 'T3', label: 'S' };
-}
 
 export function CollectionsPage() {
   const navigate = useNavigate();
-  const { loans, pushPayment, refresh } = useDashboardData();
+  const { loans, pushPayment, extendLoan, extensionQuote, refresh } = useDashboardData();
   const { token } = useAuth();
 
   const [collectors, setCollectors] = useState<Collector[]>([]);
+  const [pushTarget, setPushTarget] = useState<PushTarget | null>(null);
   const [selectedTierFilter, setSelectedTierFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -402,10 +366,17 @@ export function CollectionsPage() {
                     <button
                       type="button"
                       className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-400 px-3 py-1.5 text-xs font-bold text-black shadow-xs transition hover:bg-emerald-300"
-                      onClick={() => void pushPayment(loan.id, Number(loan.outstandingBalance))}
+                      onClick={() =>
+                        setPushTarget({
+                          loanId: loan.id,
+                          borrowerName: loan.borrower?.fullName ?? 'Borrower',
+                          borrowerPhone: loan.borrower?.phone ?? '',
+                          outstandingBalance: Number(loan.outstandingBalance),
+                        })
+                      }
                     >
                       <HugeiconsIcon icon={SentIcon} size={13} />
-                      Push USSD
+                      Request payment
                     </button>
                   </div>
                 </div>
@@ -414,6 +385,16 @@ export function CollectionsPage() {
           </div>
         )}
       </Panel>
+
+      {/* Amount, extension, and who is paying -- replaces a button hard-wired to the
+          whole balance, which left an admin on a call with no way to prompt for half. */}
+      <PushPaymentModal
+        target={pushTarget}
+        onClose={() => setPushTarget(null)}
+        onPay={pushPayment}
+        onExtend={extendLoan}
+        loadQuote={extensionQuote}
+      />
 
       {/* MODAL 1: AUTO-ASSIGN WORK QUEUE */}
       {showAutoAssignModal && (

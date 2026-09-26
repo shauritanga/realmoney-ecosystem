@@ -450,9 +450,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _detail('Product', loan['product']?['name']?.toString() ?? 'Loan'),
     _detail('Principal', _money(loan['principalAmount'])),
     _detail('Total repayment', _money(loan['totalAmount'])),
+    // Shown only when there is one, but shown plainly when there is: a balance that
+    // grew without a payment is the thing a borrower most needs explained.
+    if ((double.tryParse(loan['penaltyAmount']?.toString() ?? '0') ?? 0) > 0)
+      _detail('Late penalty', _money(loan['penaltyAmount'])),
     _detail('Paid', _money(loan['totalPaid'])),
     _detail('Outstanding balance', _money(loan['outstandingBalance'])),
     _detail('Due date', _date(loan['dueDate'])),
+    if (loan['originalDueDate'] != null && loan['originalDueDate'] != loan['dueDate'])
+      _detail('Originally due', _date(loan['originalDueDate'])),
     if (['ACTIVE', 'OVERDUE', 'DEFAULTED'].contains(loan['status'])) FilledButton(onPressed: () { Navigator.pop(context); setState(() => _tab = 2); }, child: const Text('Go to payments')),
   ]);
   void _showPayment(Map<String, dynamic> payment) => _sheet(payment['status'] == 'COMPLETED' ? 'Payment receipt' : 'Payment details', [
@@ -467,10 +473,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildActiveLoanCard(dynamic loan, {bool showRepayment = false}) {
     final status = loan['status'];
     final outstanding = double.tryParse(loan['outstandingBalance'].toString()) ?? 0;
-    final total = double.tryParse(loan['totalAmount'].toString()) ?? 0;
+    final contracted = double.tryParse(loan['totalAmount'].toString()) ?? 0;
+    final penalty = double.tryParse(loan['penaltyAmount']?.toString() ?? '0') ?? 0;
+    // Late penalties are owed on top of the contracted amount, so they belong in the
+    // denominator. Without them the bar reaches 100% while money is still due.
+    final total = contracted + penalty;
     final paid = double.tryParse(loan['totalPaid'].toString()) ?? 0;
     final progress = total > 0 ? (paid / total).clamp(0.0, 1.0) : 0.0;
     final isOverdue = status == 'OVERDUE' || status == 'DEFAULTED';
+    // An extension moved the due date. Saying so stops it reading as an error.
+    final extended = loan['originalDueDate'] != null &&
+        loan['originalDueDate'] != loan['dueDate'];
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -550,6 +563,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
             'Paid TZS ${currencyFormat.format(paid)} of TZS ${currencyFormat.format(total)} • ${(progress * 100).toStringAsFixed(0)}%',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
+          if (penalty > 0) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Includes TZS ${currencyFormat.format(penalty)} in late penalties.',
+              style: const TextStyle(color: AppColors.warning, fontSize: 12),
+            ),
+          ],
+          if (extended) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.warningTint,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Due date extended to '
+                '${loan['dueDate'].toString().substring(0, 10)}. '
+                'The amount you owe has not changed.',
+                style: const TextStyle(color: AppColors.warning, fontSize: 12),
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -740,7 +776,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Repay your loan in full by its due time to qualify for 25% more than that loan’s principal next time. Late repayment keeps the same principal limit. Product maximums apply.',
+            'Repay in full by your due time to qualify for 25% more than that loan’s principal. Paying late, or extending your due date, keeps the same limit. Product maximums apply.',
             style: TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],

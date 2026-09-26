@@ -21,7 +21,8 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "seed": "npm run build && node --env-file=.env dist/database/seed.js",
-    "seed:locations": "npm run build && node --env-file=.env dist/database/seed-locations.js"
+    "seed:locations": "npm run build && node --env-file=.env dist/database/seed-locations.js",
+    "seed:queue": "npm run build && node --env-file=.env dist/database/seed-collector-queue.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

@@ -67,6 +67,26 @@ export class Loan {
   @Column({ type: 'timestamptz' })
   dueDate: Date;
 
+  /**
+   * The due date the loan was disbursed with, frozen even when `dueDate` is pushed
+   * out by an extension.
+   *
+   * `borrowingLimit()` grants the 25% increase when `settledAt <= dueDate`. Without
+   * this, paying a fee *because you were late* would move the goalposts and earn the
+   * same reward as paying on time. Nullable: loans disbursed before extensions
+   * existed have none, and callers fall back to `dueDate`.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  originalDueDate: Date | null;
+
+  /**
+   * How far late-payment penalties have been charged. The accrual sweep bills only
+   * the whole days between this and today, then advances it, so running twice in one
+   * day is a no-op.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  penaltyAccruedThrough: Date | null;
+
   @Column({ type: 'enum', enum: LoanStatus, default: LoanStatus.PENDING })
   status: LoanStatus;
 

@@ -13,4 +13,6 @@ abstract final class AppColors {
   static const errorTint = Color(0xFFFFECEC);
   static const error = Color(0xFFB42318);
   static const warning = Color(0xFF925700);
+  /// Background for a warning notice, matching the collector app's palette.
+  static const warningTint = Color(0xFFFFF4E0);
 }

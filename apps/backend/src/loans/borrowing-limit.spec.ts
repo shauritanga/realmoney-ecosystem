@@ -22,6 +22,37 @@ describe('borrowing limit policy', () => {
   it('keeps the same principal even one millisecond late', () => {
     expect(borrowingLimit({ ...loan, settledAt: new Date(loan.dueDate.getTime() + 1) }).amount).toBe(100000);
   });
+  /**
+   * An extension moves `dueDate` out. Measuring on-time settlement against the moved
+   * date would hand the 25% increase to a borrower who paid a fee *because* they were
+   * going to be late -- the exact opposite of what the reward is for.
+   */
+  it('measures on-time settlement against the original due date, not an extended one', () => {
+    const extended = {
+      ...loan,
+      originalDueDate: new Date('2026-09-20T12:00:00Z'),
+      dueDate: new Date('2026-10-04T12:00:00Z'),
+      settledAt: new Date('2026-10-02T12:00:00Z'),
+    };
+    expect(borrowingLimit(extended).amount).toBe(100000);
+    expect(borrowingLimit(extended).reason).toBe('NO_ON_TIME_SETTLEMENT');
+  });
+
+  it('still rewards a borrower who extended but paid by the date they first agreed to', () => {
+    const extended = {
+      ...loan,
+      originalDueDate: new Date('2026-09-20T12:00:00Z'),
+      dueDate: new Date('2026-10-04T12:00:00Z'),
+      settledAt: new Date('2026-09-19T12:00:00Z'),
+    };
+    expect(borrowingLimit(extended).amount).toBe(125000);
+  });
+
+  it('falls back to dueDate for loans disbursed before extensions existed', () => {
+    expect(borrowingLimit({ ...loan, originalDueDate: null }).amount).toBe(125000);
+    expect(borrowingLimit({ ...loan, originalDueDate: undefined }).amount).toBe(125000);
+  });
+
   it('does not reward partial repayments or missing settlement evidence', () => {
     expect(borrowingLimit({ ...loan, outstandingBalance: 1 }).amount).toBe(100000);
     expect(borrowingLimit({ ...loan, status: LoanStatus.ACTIVE }).amount).toBe(100000);
@@ -39,6 +70,9 @@ describe('application limit enforcement', () => {
     const loans = {
       findOne: vi.fn().mockResolvedValueOnce(previous).mockResolvedValueOnce(active),
       count: vi.fn().mockResolvedValue(1),
+      // Case numbers are drawn at random and checked for collisions; nothing is
+      // taken in these tests, so the first draw always wins.
+      existsBy: vi.fn().mockResolvedValue(false),
       create: vi.fn((data) => data),
       save: vi.fn((data) => Promise.resolve(data)),
     };

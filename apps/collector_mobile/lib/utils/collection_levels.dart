@@ -10,15 +10,18 @@ const levelLabels = {
   'ZERO': 'T0',
   'T1': 'T1',
   'T2': 'T2',
-  'T3': 'T3',
+  // 'S' for the intensive-recovery tier, matching the backend's LEVEL_LABEL.
+  // This said 'T3' before, so the app and the dashboard named the same tier
+  // differently.
+  'T3': 'S',
 };
 
 const levelDescriptions = {
   'M2': 'Due in 2 days — friendly early reminders.',
-  'M1': 'Due tomorrow — remind + offer USSD push.',
-  'ZERO': 'Due TODAY — collect a promise, push USSD.',
+  'M1': 'Due tomorrow — remind, and offer to take payment now.',
+  'ZERO': 'Due TODAY — take payment, or get a promise.',
   'T1': '1 day overdue — firm follow-up.',
-  'T2': '2 days overdue — escalate tone, push USSD.',
+  'T2': '2 days overdue — escalate, and push for payment today.',
   'T3': '3+ days overdue — intensive recovery.',
 };
 
@@ -31,25 +34,15 @@ String levelStatusText(LoanAssignment item) {
   return '${item.daysOverdue}d overdue';
 }
 
-/// Worked = the collector logged any touch on this case today.
-bool workedToday(LoanAssignment item) {
-  final now = DateTime.now();
-  return item.recentInteractions.any((log) {
-    final created =
-        DateTime.tryParse(log['createdAt']?.toString() ?? '');
-    return created != null &&
-        created.year == now.year &&
-        created.month == now.month &&
-        created.day == now.day;
-  });
-}
+/// Whether this case has been worked today.
+///
+/// Read straight from the server now. It used to be inferred from a three-item
+/// preview of recent interactions, so a case touched four or more times in one day
+/// dropped out of that window and looked untouched.
+bool workedToday(LoanAssignment item) => item.workedToday;
 
-/// Broken promise: a still-pending PTP whose date already passed.
-bool ptpBroken(LoanAssignment item) {
-  final ptp = item.activePtp;
-  if (ptp == null) return false;
-  final promised =
-      DateTime.tryParse(ptp['promisedDate']?.toString() ?? '');
-  return promised != null &&
-      promised.isBefore(DateTime.now().subtract(const Duration(hours: 1)));
-}
+/// A promise the borrower has already missed.
+///
+/// Also server-derived: the grace period and the comparison now live in one place
+/// (`ptp-status.ts`) instead of the app applying its own one-hour rule.
+bool ptpBroken(LoanAssignment item) => item.ptpOverdue;

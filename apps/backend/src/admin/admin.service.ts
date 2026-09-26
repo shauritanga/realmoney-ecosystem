@@ -6,6 +6,7 @@ import { LoanStatus, UserRole, RepaymentStatus, KycStatus } from '../database/en
 import { Loan } from '../database/entities/loan.entity.js';
 import { Repayment } from '../database/entities/repayment.entity.js';
 import { LedgerEntry } from '../database/entities/ledger-entry.entity.js';
+import { LoanExtension } from '../database/entities/loan-extension.entity.js';
 import { User } from '../database/entities/user.entity.js';
 import { normalizePhone } from '../onboarding/phone-verification.service.js';
 import {
@@ -27,7 +28,70 @@ export class AdminService {
     private readonly ledger: Repository<LedgerEntry>,
     @InjectRepository(User)
     private readonly users: Repository<User>,
+    @InjectRepository(LoanExtension)
+    private readonly extensions: Repository<LoanExtension>,
   ) {}
+
+  /**
+   * Every extension ever granted, newest first, with a rollup by loan.
+   *
+   * Exists so somebody can answer "how many loans are we rolling, and who is
+   * approving them?" -- the metric that distinguishes an extension offered as a
+   * service from one sold as a trap. Without it, a borrower on their second extension
+   * is only visible to whoever happens to open that one case.
+   */
+  async getExtensions(limit = 100) {
+    const rows = await this.extensions.find({
+      order: { createdAt: 'DESC' },
+      take: Math.min(Math.max(limit, 1), 500),
+      relations: { loan: { borrower: true }, grantedBy: true },
+    });
+
+    // How many extensions each of these loans has in total, so a row can say "2 of 2"
+    // rather than leaving the reader to count occurrences in the list.
+    const totals = new Map<string, number>();
+    if (rows.length) {
+      const counts = await this.extensions
+        .createQueryBuilder('e')
+        .select('e.loanId', 'loanId')
+        .addSelect('COUNT(*)', 'count')
+        .where('e.loanId IN (:...ids)', { ids: [...new Set(rows.map((r) => r.loanId))] })
+        .groupBy('e.loanId')
+        .getRawMany<{ loanId: string; count: string }>();
+      for (const row of counts) totals.set(row.loanId, Number(row.count));
+    }
+
+    const items = rows.map((extension) => ({
+      id: extension.id,
+      loanId: extension.loanId,
+      loanNumber: extension.loan?.loanNumber ?? null,
+      borrowerName: extension.loan?.borrower?.fullName ?? null,
+      borrowerPhone: extension.loan?.borrower?.phone ?? null,
+      previousDueDate: extension.previousDueDate,
+      newDueDate: extension.newDueDate,
+      feeAmount: Number(extension.feeAmount),
+      outstandingAtExtension: Number(extension.outstandingAtExtension),
+      grantedBy: extension.grantedBy?.fullName ?? null,
+      createdAt: extension.createdAt,
+      extensionsOnLoan: totals.get(extension.loanId) ?? 1,
+      // The status now, not at the time -- whether rolling this loan actually helped.
+      loanStatus: extension.loan?.status ?? null,
+      outstandingNow: extension.loan ? Number(extension.loan.outstandingBalance) : null,
+    }));
+
+    return {
+      items,
+      totals: {
+        extensions: items.length,
+        loans: new Set(items.map((i) => i.loanId)).size,
+        feesCollected: Math.round(items.reduce((sum, i) => sum + i.feeAmount, 0) * 100) / 100,
+        // Loans rolled more than once: the number worth watching.
+        repeatLoans: new Set(
+          items.filter((i) => i.extensionsOnLoan > 1).map((i) => i.loanId),
+        ).size,
+      },
+    };
+  }
 
   async getDashboardStats() {
     const totalLoans = await this.loans.count();

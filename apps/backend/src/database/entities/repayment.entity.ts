@@ -9,6 +9,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { RepaymentChannel, RepaymentStatus } from '../enums.js';
+import type { RepaymentPurpose } from '../enums.js';
 import { NumericTransformer } from '../numeric.transformer.js';
 import type { Loan } from './loan.entity.js';
 import type { User } from './user.entity.js';
@@ -44,6 +45,42 @@ export class Repayment {
 
   @Column({ type: 'enum', enum: RepaymentStatus, default: RepaymentStatus.PENDING })
   status: RepaymentStatus;
+
+  /**
+   * Whether this money pays the debt down or buys more time. An EXTENSION_FEE never
+   * touches `outstandingBalance` or `totalPaid` -- see the branch in
+   * ClickPesaService.reconcile.
+   */
+  @Column({ type: 'varchar', default: 'REPAYMENT' })
+  purpose: RepaymentPurpose;
+
+  /**
+   * How the payment was applied, penalty first. The four legs always sum to `amount`
+   * for a COMPLETED repayment; all zero for an EXTENSION_FEE, which settles nothing.
+   */
+  @Column({ type: 'numeric', precision: 12, scale: 2, default: 0, transformer: NumericTransformer })
+  penaltyPaid: number;
+
+  @Column({ type: 'numeric', precision: 12, scale: 2, default: 0, transformer: NumericTransformer })
+  interestPaid: number;
+
+  @Column({ type: 'numeric', precision: 12, scale: 2, default: 0, transformer: NumericTransformer })
+  feePaid: number;
+
+  @Column({ type: 'numeric', precision: 12, scale: 2, default: 0, transformer: NumericTransformer })
+  principalPaid: number;
+
+  /**
+   * The number actually prompted, when a friend or relative is paying on the
+   * borrower's behalf. Null means it went to the borrower's own phone. Recorded here
+   * only -- a number given on a collections call is not consent to add it to the
+   * customer's profile.
+   */
+  @Column({ type: 'varchar', nullable: true })
+  payerPhone: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  payerName: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   notes: string | null;

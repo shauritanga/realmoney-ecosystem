@@ -9,6 +9,7 @@ import {
   Wallet02Icon,
 } from '@hugeicons/core-free-icons';
 import { money } from '../lib/format';
+import { csvDownload } from '../lib/csv';
 import { EmptyState, LoadingState, PageHeading, Panel } from '../components/ui';
 import { useDashboardData } from '../hooks';
 import type { LedgerEntry } from '../types';
@@ -83,25 +84,19 @@ export function LedgerPage() {
   }, [ledger, selectedAccount, searchQuery]);
 
   function exportCsv() {
-    const headers = ['ID', 'Date', 'Loan Number', 'Account Type', 'Debit (TZS)', 'Credit (TZS)', 'Description'];
-    const rows = filteredEntries.map((e) => [
-      e.id,
-      new Date(e.createdAt).toISOString(),
-      e.loan?.loanNumber || 'N/A',
-      e.accountType,
-      e.debit,
-      e.credit,
-      `"${(e.description || '').replaceAll('"', '""')}"`,
-    ]);
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `realmoney-accounting-journal-${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    csvDownload(
+      `realmoney-accounting-journal-${new Date().toISOString().slice(0, 10)}.csv`,
+      ['ID', 'Date', 'Loan Number', 'Account Type', 'Debit (TZS)', 'Credit (TZS)', 'Description'],
+      filteredEntries.map((e) => [
+        e.id,
+        new Date(e.createdAt).toISOString(),
+        e.loan?.loanNumber || 'N/A',
+        e.accountType,
+        e.debit,
+        e.credit,
+        e.description || '',
+      ]),
+    );
   }
 
   if (ledger.length === 0 && loading) {

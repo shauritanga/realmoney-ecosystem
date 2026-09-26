@@ -9,6 +9,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { PtpStatus } from '../enums.js';
+import type { PtpResolvedReason } from '../enums.js';
 import { NumericTransformer } from '../numeric.transformer.js';
 import type { Loan } from './loan.entity.js';
 import type { User } from './user.entity.js';
@@ -39,6 +40,10 @@ export class PromiseToPay {
 
   @Column({ type: 'timestamptz', nullable: true })
   resolvedAt: Date | null;
+
+  /** Why this promise left PENDING. See PTP_RESOLVED_REASONS. */
+  @Column({ type: 'varchar', nullable: true })
+  resolvedReason: PtpResolvedReason | null;
 
   @Column({ type: 'varchar', nullable: true })
   notes: string | null;

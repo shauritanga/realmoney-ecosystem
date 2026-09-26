@@ -9,6 +9,7 @@ import { LoanProduct } from './entities/loan-product.entity.js';
 import { Loan } from './entities/loan.entity.js';
 import { Repayment } from './entities/repayment.entity.js';
 import { LedgerEntry } from './entities/ledger-entry.entity.js';
+import { LoanExtension } from './entities/loan-extension.entity.js';
 import { CollectorAssignment } from './entities/collector-assignment.entity.js';
 import { InteractionLog } from './entities/interaction-log.entity.js';
 import { PromiseToPay } from './entities/promise-to-pay.entity.js';
@@ -23,6 +24,7 @@ export const APP_ENTITIES = [
   LoanProduct,
   Loan,
   Repayment,
+  LoanExtension,
   LedgerEntry,
   CollectorAssignment,
   InteractionLog,

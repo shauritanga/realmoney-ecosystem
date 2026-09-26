@@ -1,4 +1,27 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Declared explicitly: only the debug manifest injected INTERNET, so a release
+         build had no networking permission of its own. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Reads the device call log after a call so talk time is recorded automatically
+         and the collector cannot mistype it. NOTE: Google Play restricts READ_CALL_LOG
+         to eligible use cases (default dialer, caller ID, spam blocking); a collections
+         CRM is not one, so this build is for internal distribution (Managed Google Play
+         private app, or direct APK/MDM to company devices). If a public listing is ever
+         required, drop this permission and switch DurationSource to IN_APP_TIMER, which
+         needs no permission. -->
+    <uses-permission android:name="android.permission.READ_CALL_LOG"/>
+
+    <!-- The call_log plugin's own manifest requests these; we only ever read. Leaving
+         WRITE_CALL_LOG in place would claim an ability the app never uses and widen
+         the Play Store restriction problem for no benefit, and READ_PHONE_STATE /
+         READ_PHONE_NUMBERS expose the handset's own subscriber details, which this
+         app has no reason to see. -->
+    <uses-permission android:name="android.permission.WRITE_CALL_LOG" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" tools:node="remove"/>
+
     <application
         android:label="RealMoney Collector"
         android:name="${applicationName}"
@@ -40,6 +63,24 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+
+        <!-- Without these, package visibility on Android 11+ makes canLaunchUrl
+             return false for tel:, sms: and https:, so Call / SMS / WhatsApp silently
+             did nothing. Note the SMS scheme is `smsto`: url_launcher maps an sms:
+             URI onto ACTION_SENDTO with that scheme, and declaring `sms` does not
+             match. -->
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO"/>
+            <data android:scheme="smsto"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
         </intent>
     </queries>
 </manifest>

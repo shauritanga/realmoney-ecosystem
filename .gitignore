@@ -12,6 +12,8 @@ dist-ssr/
 
 # Flutter / Dart build artifacts
 **/build/
+# Kotlin incremental-compile sessions, written by the Android Gradle build.
+**/.kotlin/
 **/.dart_tool/
 **/.flutter-plugins
 **/.flutter-plugins-dependencies

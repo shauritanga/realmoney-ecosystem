@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Param, Query, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { LoansService } from './loans.service.js';
+import { PenaltyAccrualService } from './penalty-accrual.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -8,7 +9,10 @@ import { UserRole, LoanStatus, AgingBucket } from '../database/enums.js';
 @Controller('loans')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LoansController {
-  constructor(private readonly loansService: LoansService) {}
+  constructor(
+    private readonly loansService: LoansService,
+    private readonly penaltyAccrual: PenaltyAccrualService,
+  ) {}
 
   @Get('products')
   getProducts() {
@@ -27,13 +31,17 @@ export class LoansController {
 
   @Get('my-loans')
   @Roles(UserRole.BORROWER)
-  getMyLoans(@Request() req: any) {
+  async getMyLoans(@Request() req: any) {
+    // A borrower must never be shown a smaller balance than the one they will be
+    // asked to pay, so penalties accrue before the read rather than after it.
+    await this.penaltyAccrual.sweep();
     return this.loansService.getMyLoans(req.user.id);
   }
 
   @Get('my-limit')
   @Roles(UserRole.BORROWER)
-  getMyLimit(@Request() req: any) {
+  async getMyLimit(@Request() req: any) {
+    await this.penaltyAccrual.sweep();
     return this.loansService.getBorrowingLimit(req.user.id);
   }
 

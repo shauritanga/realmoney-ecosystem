@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Add01Icon,
+  Analytics01Icon,
   Alert02Icon,
   CheckmarkCircle02Icon,
   RefreshIcon,
@@ -13,41 +15,9 @@ import {
 import { money } from '../lib/format';
 import { EmptyState, PageHeading, Panel } from '../components/ui';
 import { useAuth, useDashboardData } from '../hooks';
+import { TIERS, type CollectionTier } from '../lib/collectionTiers';
+import type { Collector } from '../types';
 
-interface AssignedLoan {
-  id: string;
-  loanId: string;
-  loanNumber: string;
-  borrowerName: string;
-  borrowerPhone: string;
-  outstandingBalance: number;
-  dueDate: string;
-  assignedAt: string;
-}
-
-interface Collector {
-  id: string;
-  fullName: string;
-  phone: string;
-  email: string | null;
-  isActive: boolean;
-  activeAssignmentsCount: number;
-  workedLevel: string | null;
-  workedLevelLabel: string | null;
-  maxCapacity: number | null;
-  assignedLoans?: AssignedLoan[];
-}
-
-type CollectionTier = 'M2' | 'M1' | 'ZERO' | 'T1' | 'T2' | 'T3';
-
-const TIERS: { key: CollectionTier; label: string; desc: string; max: number | null }[] = [
-  { key: 'M2', label: 'T-2', desc: 'Due in 2 days (max 45)', max: 45 },
-  { key: 'M1', label: 'T-1', desc: 'Due tomorrow (max 45)', max: 45 },
-  { key: 'ZERO', label: 'T0', desc: 'Due today (max 45)', max: 45 },
-  { key: 'T1', label: 'T1', desc: '1 day overdue (max 45)', max: 45 },
-  { key: 'T2', label: 'T2', desc: '2 days overdue (max 45)', max: 45 },
-  { key: 'T3', label: 'S', desc: '3+ days overdue (unlimited)', max: null },
-];
 
 export function CollectorsPage() {
   const { token } = useAuth();
@@ -510,7 +480,15 @@ export function CollectorsPage() {
                 </div>
 
                 {/* Bottom Actions */}
-                <div className="mt-5 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800/80">
+                <div className="mt-5 grid grid-cols-3 gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800/80">
+                  <Link
+                    to={`/collectors/${col.id}/performance`}
+                    className="inline-flex items-center justify-center gap-1 rounded-xl border border-zinc-200 py-1.5 px-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  >
+                    <HugeiconsIcon icon={Analytics01Icon} size={13} />
+                    Activity
+                  </Link>
+
                   <button
                     type="button"
                     onClick={() => setViewingCollector(col)}

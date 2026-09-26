@@ -14,6 +14,8 @@
  * Rule: one collector works ONE level per day — levels must never be mixed
  * within a collector's active assignments.
  */
+import { utcDaysBetween } from './date-range.js';
+
 export enum CollectionLevel {
   M2 = 'M2',
   M1 = 'M1',
@@ -63,17 +65,9 @@ export function maxCapacityForLevel(level: CollectionLevel): number | null {
   return 45;
 }
 
-/** UTC calendar-day truncation: levels must not depend on server timezone. */
-function startOfDay(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-}
-
 /** Whole calendar days from `now` until `dueDate` (negative = overdue). */
 export function daysToDue(dueDate: Date, now: Date = new Date()): number {
-  return Math.round(
-    (startOfDay(new Date(dueDate)).getTime() - startOfDay(now).getTime()) /
-      86_400_000,
-  );
+  return utcDaysBetween(now, new Date(dueDate));
 }
 
 export function getCollectionLevel(

@@ -1,6 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
+  Calendar03Icon,
+  Analytics01Icon,
   BookOpen01Icon,
   CallIcon,
   Cancel01Icon,
@@ -23,15 +25,52 @@ interface SidebarProps {
   onLogout: () => void;
 }
 
-const navItems = [
-  { to: '/', label: 'Overview', icon: DashboardSquare01Icon },
+type BadgeTone = 'amber' | 'rose';
+
+interface NavItem {
+  to: string;
+  label: string;
+  icon: typeof CallIcon;
+  /** Resolved against dashboard data at render time. */
+  badge?: (data: {
+    pendingLoans: number;
+    overdueLoans: number;
+    brokenPtps: number;
+  }) => number;
+  badgeTone?: BadgeTone;
+  /** Highlight only on an exact match, so parent links do not stay lit on children. */
+  exact?: boolean;
+}
+
+const navItems: NavItem[] = [
+  { to: '/', label: 'Overview', icon: DashboardSquare01Icon, exact: true },
   { to: '/kyc', label: 'Identity & KYC', icon: UserCheck01Icon },
-  { to: '/underwriting', label: 'Loan Underwriting', icon: Coins01Icon, badge: 'loans' },
-  { to: '/collections', label: 'Collections', icon: CallIcon, badge: 'collections' },
-  { to: '/collectors', label: 'Collectors', icon: UserGroupIcon },
+  {
+    to: '/underwriting',
+    label: 'Loan Underwriting',
+    icon: Coins01Icon,
+    badge: (d) => d.pendingLoans,
+    badgeTone: 'amber',
+  },
+  {
+    to: '/collections',
+    label: 'Collections',
+    icon: CallIcon,
+    badge: (d) => d.overdueLoans,
+    badgeTone: 'rose',
+    exact: true,
+  },
+  {
+    to: '/collections/activity',
+    label: 'Collections Activity',
+    icon: Analytics01Icon,
+    badge: (d) => d.brokenPtps,
+    badgeTone: 'rose',
+  },
+  { to: '/collections/extensions', label: 'Extensions', icon: Calendar03Icon },
+  { to: '/collectors', label: 'Collectors', icon: UserGroupIcon, exact: true },
   { to: '/ledger', label: 'Accounting', icon: BookOpen01Icon },
 ];
-
 export function Sidebar({
   desktopOpen,
   mobileOpen,
@@ -42,7 +81,7 @@ export function Sidebar({
   onOpenProfile,
   onLogout,
 }: SidebarProps) {
-  const { overdueLoans, pendingLoans } = useDashboardData();
+  const { overdueLoans, pendingLoans, collectionAlerts } = useDashboardData();
 
   return (
     <>
@@ -88,24 +127,25 @@ export function Sidebar({
           className="mt-7 flex flex-1 flex-col gap-1 overflow-y-auto"
           aria-label="Primary navigation"
         >
-          {navItems.map(({ to, label, icon: Icon, badge }) => {
-            const badgeCount =
-              badge === 'loans'
-                ? pendingLoans.length
-                : badge === 'collections'
-                ? overdueLoans.length
-                : 0;
+          {navItems.map(({ to, label, icon: Icon, badge, badgeTone, exact }) => {
+            const badgeCount = badge
+              ? badge({
+                  pendingLoans: pendingLoans.length,
+                  overdueLoans: overdueLoans.length,
+                  brokenPtps: collectionAlerts?.brokenPtpCount ?? 0,
+                })
+              : 0;
             const badgeColor =
-              badge === 'loans'
+              badgeTone === 'amber'
                 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                 : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300';
-            const dotColor = badge === 'loans' ? 'bg-amber-500' : 'bg-rose-500';
+            const dotColor = badgeTone === 'amber' ? 'bg-amber-500' : 'bg-rose-500';
 
             return (
               <NavLink
                 key={to}
                 to={to}
-                end={to === '/'}
+                end={exact}
                 onClick={onCloseMobile}
                 title={!desktopOpen ? label : undefined}
                 className={({ isActive }) =>

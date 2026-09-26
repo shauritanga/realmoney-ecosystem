@@ -168,7 +168,7 @@ async function main() {
 
   await loans.save(
     loans.create({
-      loanNumber: 'RM-2026-0001',
+      loanNumber: '4207',
       borrowerId: borrower1.id,
       productId: productQuickCash.id,
       principalAmount: 50000,
@@ -192,7 +192,7 @@ async function main() {
   const pastDueDate1 = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
   const loan2 = await loans.save(
     loans.create({
-      loanNumber: 'RM-2026-0002',
+      loanNumber: '6501',
       borrowerId: borrower2.id,
       productId: productQuickCash.id,
       principalAmount: 80000,
@@ -231,7 +231,7 @@ async function main() {
       collectorId: collector1.id,
       channel: CommunicationChannel.CALL,
       disposition: DispositionCode.PROMISED_TO_PAY,
-      notes: 'Customer promised to pay 40,000 TZS by tomorrow noon via ClickPesa USSD.',
+      notes: 'Customer promised to pay 40,000 TZS by tomorrow noon.',
       durationSeconds: 145,
     }),
   );
@@ -251,7 +251,7 @@ async function main() {
   const pastDueDate2 = new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000); // 12 days overdue
   const loan3 = await loans.save(
     loans.create({
-      loanNumber: 'RM-2026-0003',
+      loanNumber: '1102',
       borrowerId: borrower3.id,
       productId: productBusiness.id,
       principalAmount: 200000,

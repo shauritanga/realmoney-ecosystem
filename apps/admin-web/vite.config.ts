@@ -14,7 +14,8 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        // Override with API_PROXY_TARGET when the backend runs on another port.
+        target: process.env.API_PROXY_TARGET || 'http://localhost:3001',
         changeOrigin: true,
       },
     },
